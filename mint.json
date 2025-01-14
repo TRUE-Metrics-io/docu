@@ -51,9 +51,7 @@
       "group": "Data Export",
       "pages": [
         "Introduction_to_data_export",
-        "restAPI",
-        "BulkExport",
-        "Data_Description_Format"
+        "Architecture_of_Export",
       ]
     }
   ],
