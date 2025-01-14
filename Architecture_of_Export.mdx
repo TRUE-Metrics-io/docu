@@ -10,15 +10,3 @@ For Google Cloud users, the integration process is seamless. We utilize the Goog
 
 ### SFTP
 For customers using other cloud providers or on-premises setups, SFTP offers a flexible solution. In this configuration, we push position data and stops KPI data to your FTP server daily. This approach ensures you always have access to the most recent data while maintaining a complete history for your reference.
-
-## Update and versioning
-Daily, we generate a new and complete data set, which is synced with your data storage. To give you control about the versioning, a new folder with the creation date as name is used.
-
-### Complete Export for Positions
-For each address to which you delivered so far, we export one entrance and 1–3 parking places.
-If multiple deliveries are made to the same address, we aggregate the data for you. From the multiple deliveries, we identify and include the "best" entrance and the "best" parking places.
-
-###  Complete Export for Stops
-For each delivery you have done so far, we provide the associated Stop KPIs.
-
-<Note> There is no need to merge data from different dates. Simply use the newest folder and work exclusively with the data it contains. </Note>
