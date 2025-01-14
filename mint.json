@@ -39,11 +39,12 @@
     },
     {
       "group": "SDK integration",
-      "pages": [ "quickstart", "functions", "metadata","data_consumption_and_battery"]      
+      "pages": [ "quickstart", "functions", "metadata", "data_consumption_and_battery"]      
     },
     {
       "group": "Data Export",
       "pages": [
+        "Data_Export_Introduction"
       ]
     }
   ],
