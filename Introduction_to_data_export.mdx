@@ -113,10 +113,10 @@ The following example could be a typical line/row of the parquet file.
 ```
 
 ## Architecture
-Our system is designed to accommodate the data transfer needs of our customers efficiently. Most customers prefer a daily batch export of all data, including position data and stops KPI data. To support this, we integrate with the most popular cloud providers—AWS, Google Cloud, and Azure—as well as provide a generic option via SFTP for on-premises or other cloud setups.
+Our system is designed to accommodate the data transfer needs of our customers efficiently. Most customers prefer a daily batch export of all data, including position data and stops KPI data. To support this, we integrate with the most popular cloud providers- AWS, Google Cloud, and Azure - as well as provide a generic option via SFTP for on-premises or other cloud setups.
 
 ### AWS
-For customers using AWS as their cloud provider, the setup is straightforward. Simply configure an S3 bucket, and we will automatically update it daily with the latest data using AWS DataSync.
+For customers using AWS as their cloud provider, the setup is straightforward. Simply configure an S3 bucket with the right permission, and we will automatically update it daily with the latest data using AWS DataSync.
 
 <img height="160" noZoom src="/images/aws.png" alt="AWS Integration Diagram"/>
 
