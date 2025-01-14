@@ -45,7 +45,8 @@
       "group": "Data Export",
       "pages": [
         "Introduction_to_data_export",
-        "Architecture_of_Export"   
+        "Architecture_of_Export",
+        "Update_and_Versioning"
       ]
     }
   ],
