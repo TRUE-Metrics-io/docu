@@ -32,12 +32,6 @@
     "name": "Map-Demonstrator",
     "url": "https://www.demonstrator.truemetrics.cloud/map"
   },
-  "tabs": [
-    {
-      "name": "Data Export",
-      "url": "export"
-    }
-  ],
   "navigation": [
     {
       "group": "Getting Started",
