@@ -1,0 +1,25 @@
+## Architecture of export
+Our system is designed to accommodate the data transfer needs of our customers efficiently. Most customers prefer a daily batch export of all data, including position data and stops KPI data. To support this, we integrate with the most popular cloud providers- AWS, Google Cloud, and Azure - as well as provide a generic option via SFTP for on-premises or other cloud setups.
+
+### AWS
+For customers using AWS as their cloud provider, the setup is straightforward. Simply configure an S3 bucket with the right permission, and we will automatically update it daily with the latest data using AWS DataSync.
+
+<img height="160" noZoom src="/images/aws.png" alt="AWS Integration Diagram"/>
+
+### Google Cloud
+For Google Cloud users, the integration process is seamless. We utilize the Google Cloud Storage Transfer Service to sync your data directly into your Google Cloud Storage bucket.
+
+### SFTP
+For customers using other cloud providers or on-premises setups, SFTP offers a flexible solution. In this configuration, we push position data and stops KPI data to your FTP server daily. This approach ensures you always have access to the most recent data while maintaining a complete history for your reference.
+
+## Update and versioning
+Daily, we generate a new and complete data set, which is synced with your data storage. To give you control about the versioning, a new folder with the creation date as name is used.
+
+### Complete Export for Positions
+For each address to which you delivered so far, we export one entrance and 1–3 parking places.
+If multiple deliveries are made to the same address, we aggregate the data for you. From the multiple deliveries, we identify and include the "best" entrance and the "best" parking places.
+
+###  Complete Export for Stops
+For each delivery you have done so far, we provide the associated Stop KPIs.
+
+<Note> There is no need to merge data from different dates. Simply use the newest folder and work exclusively with the data it contains. </Note>
