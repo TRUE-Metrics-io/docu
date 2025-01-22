@@ -1,0 +1,50 @@
+
+### Android Native
+
+### IOS
+Most of the truemetrics customer's users have Android system - nevertheless, we also have seen that many couriers prefer to use iPhones especially when bring-your-own-device strategy are implemented. That's why we decided to put the IOS version of our SDK on the roadmap for Q2/2025. 
+
+### React Native
+
+###  Flutter
+
+
+Using truemetrics Flutter plugin could be easier.
+
+To use this plugin,  by add `truemetrics_flutter_sdk` as a dependency in your `pubspec.yaml` file:
+
+```yaml
+dependencies:
+  truemetrics_flutter_sdk: ^0.0.1
+```
+Go for the initialize of the SDK
+```
+final sdk = TruemetricsFlutterSdk();
+final config = TruemetricsConfig(config: {
+    'apiKey': 'your-api-key',
+    'debug': true
+    });
+await sdk.initialize(config);
+```
+
+perform start recording
+```
+await sdk.startRecording();
+```
+
+or Log metadata
+```
+await sdk.logMetadata({'key': 'value'});
+```
+
+and finally stop recording
+```
+await sdk.stopRecording();
+```
+
+and you are done, was easy right :) 
+
+### Expo
+
+
+
