@@ -39,7 +39,7 @@
     },
     {
       "group": "SDK integration",
-      "pages": [ "quickstart", "functions", "metadata", "data_consumption_and_battery"]      
+      "pages": [ "quickstart_integration", "functions", "android_native","react_native", "expo", "metadata", "data_consumption_and_battery"]      
     },
     {
       "group": "Data Export",
