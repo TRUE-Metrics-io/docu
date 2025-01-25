@@ -1,0 +1,42 @@
+
+---
+title: 'Flutter Integration'
+description: 'Start the integration in less than 5 minutes.'
+---
+
+Using truemetrics Flutter plugin could be easier. 
+See here more on how it [works](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository)
+ 
+
+To use this plugin, just add `truemetrics_flutter_sdk` as a dependency in your `pubspec.yaml` file:
+
+```yaml
+dependencies:
+  truemetrics_flutter_sdk: ^0.0.1
+```
+Go for the initialize of the SDK
+```
+final sdk = TruemetricsFlutterSdk();
+final config = TruemetricsConfig(config: {
+    'apiKey': 'your-api-key',
+    'debug': true
+    });
+await sdk.initialize(config);
+```
+
+perform start recording
+```
+await sdk.startRecording();
+```
+
+or Log metadata
+```
+await sdk.logMetadata({'key': 'value'});
+```
+
+and finally stop recording
+```
+await sdk.stopRecording();
+```
+
+and you are done, was easy right :) 
