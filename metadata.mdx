@@ -58,6 +58,19 @@ truemetrics automatically enriches stop KPIs, parking spots, and entrances by us
 | identifier_stop      | 531234abc            |
 | ...                  |  ...             |
 
+## Reference Location
+
+The truemetrics algorithm does not rely on the location to which you are sending your driver. Nevertheless, in the early stages of integration, many customers find it useful to compare the actual delivery location with the expected location to assess the accuracy of the address and geocoder.
+
+| Example Key   | Example Value        |
+| ------------- | -------------------- |
+| lat           | 40.3123              |
+| lon           | 13.533               |
+
+
+
+# Additional Best Practices
+
 ## Service Type
 
 Stop times can vary significantly depending on the type of service performed. Was it a fast B2B drop-off with a single parcel, or a more complex B2C pickup requiring a signature? You know best what is important for your business, and truemetrics allows you to enrich the data with your specific categories, enabling you to later analyze the data based on those categories.
@@ -69,17 +82,6 @@ Typical examples:
 | type_consignee  | B2C                |
 | type_stop       | pickup (or drop-off)|
 | type_service    | E42c (internal code)|
-
-# Additional Best Practices
-
-## Reference Location
-
-The truemetrics algorithm does not rely on the location to which you are sending your driver. Nevertheless, in the early stages of integration, many customers find it useful to compare the actual delivery location with the expected location to assess the accuracy of the address and geocoder.
-
-| Example Key   | Example Value        |
-| ------------- | -------------------- |
-| lat           | 40.3123              |
-| lon           | 13.533               |
 
 ## Vehicle types
 
