@@ -28,16 +28,10 @@ If coordinates are 0/0, delete the corresponding record by the identifier from y
 Otherwise, insert or update the location in your database.
 Ensure that your import process is idempotent and can handle re-processing the same file if needed.
 
-### [outdated]  Full Export for Positions
-
-Earlier versions of truemetrics also offered full export.
-
-###  Complete Export for Stops
-For each delivery you have done so far, we provide the associated Stop KPIs for the last 90 days.
-
-<Note> There is no need to merge data from different dates. Use the newest folder and work exclusively with the data it contains. </Note>
+### Export for Stops KPIS
+For each delivery you have done so far, we provide the associated Stop KPIs for the last 90 days. If you want to a longer timehorizent then 90 days discuss it with truemetrics.
 
 ### Time delay between recording and export
-We are processing all your deliveries at the end of the day (at 00:00 am) and perform the export of the data on the end of the next day (at around 23:00 am). This results in a delay between delivery and export of 24-48 hours. 
+We are processing all your deliveries at the end of the day and perform the export of the data on the end of the next day (at around 23:00 am). This results in a delay between delivery and export of 24-48 hours. 
 
-Example: A data export labeled 2024-01-05 will include deliveries up to the end of 2024-01-04.
+Example: A data export labeled 2024-01-05 will include deliveries up to the end of 2024-01-04. 
