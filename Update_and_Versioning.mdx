@@ -29,9 +29,15 @@ Otherwise, insert or update the location in your database.
 Ensure that your import process is idempotent and can handle re-processing the same file if needed.
 
 ### Export for Stops KPIS
-For each delivery you have done so far, we provide the associated Stop KPIs for the last 90 days. If you want to a longer timehorizent then 90 days discuss it with truemetrics.
+For each delivery you have done so far, we provide the associated Stop KPIs for the last day. The folder structure will be 
+
+*s3://true-shared-YOURCOMPANY/truemetrics-stops/incremental/{date}/stops.parquet*
+
+The schema of the data can be found here in the same folder as schema file.
+s3://true-shared-YOURCOMPANY/truemetrics-stops/incremental/{date}/schema.json
+
 
 ### Time delay between recording and export
-We are processing all your deliveries at the end of the day and perform the export of the data on the end of the next day (at around 23:00 am). This results in a delay between delivery and export of 24-48 hours. 
+We are processing all your deliveries at the end of the day and perform the export of the data on the end of the next day (at around 23:00 am). This results in a delay between delivery and export of 24 hours. 
 
 Example: A data export labeled 2024-01-05 will include deliveries up to the end of 2024-01-04. 
