@@ -1,175 +1,350 @@
+# Truemetrics Android SDK - Usage Guide
+
+The Truemetrics SDK provides advanced sensor data collection and analytics capabilities for Android
+applications. This guide covers all aspects of integrating and using the SDK effectively.
+
+## Table of Contents
+
+- [Installation](#installation)
+- [Quick Start](#quick-start)
+- [Configuration](#configuration)
+- [Core Features](#core-features)
+- [Data Observation](#data-observation)
+- [Sensor Management](#sensor-management)
+- [Advanced Usage](#advanced-usage)
+- [Best Practices](#best-practices)
+- [API Reference](#api-reference)
+
 ---
-title: 'Android Integration'
-description: 'Start the integration in less than 5 minutes.'
+
+## Installation
+
+Add the Truemetrics SDK to your app's `build.gradle` file:
+
+```gradle
+dependencies {
+    implementation 'io.truemetrics:truemetrics-sdk:VERSION'
+}
+```
+
+## Quick Start
+
+### 1. Initialize the SDK in your Application class
+
+```kotlin
+class MyApplication : Application() {
+    override fun onCreate() {
+        super.onCreate()
+        
+        // Basic configuration
+        val config = SdkConfiguration.Builder("YOUR_API_KEY")
+            .build()
+            
+        TruemetricsSdk.init(this, config)
+    }
+}
+```
+
+### 2. Start and stop recordings
+
+```kotlin
+// Get SDK instance
+val sdk = TruemetricsSdk.getInstance()
+
+// Start recording sensor data
+sdk.startRecording()
+
+// Stop recording
+sdk.stopRecording()
+
+// Check recording status
+if (sdk.isRecordingInProgress()) {
+    // Recording is active
+}
+```
+
 ---
 
-To ensure a smooth integration in your app, we prepared a sample integration with a basic demonstrator just for you. You can find this repository 
-[here](https://github.com/TRUE-Metrics-io/truemetrics_android_demo_app_p). Just clone the repository
-locally, by following these
-[instructions](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository)
-in your terminal.
+## Configuration
 
+The SDK is configured using the `SdkConfiguration.Builder` class. Here are all available options:
 
-### Setup and  maven repository
-Android SDK can run on minimum Android 7.0 (API level 24). Project requires Java 17. If necessary, adjust your Java version in your IDE, typically in `IDE's File -> Project structure -> SDK Location`.
+### Basic Configuration
 
-As next step update your project-level `settings.gradle` file and `dependencyResolutionManagement` section by the following:
+```kotlin
+val config = SdkConfiguration.Builder("YOUR_API_KEY")
+    .build()
+```
 
-```json
-dependencyResolutionManagement {
-    repositoriesMode.set(RepositoriesMode.PREFER_PROJECT)
-    repositories {
-        // other repositories
-        maven {
-            name = 'truemetrics SDK'
-            url = "https://github.com/TRUE-Metrics-io/truemetrics_android_SDK_p_maven/raw/main"
-        }
+### Auto-Start Recording Configuration
+
+The SDK can automatically start recording after initialization with configurable delays:
+
+```kotlin
+// Start recording immediately after initialization
+val config = SdkConfiguration.Builder(apiKey)
+    .delayAutoStartRecording(SdkConfiguration.AUTO_START_ON_INIT)
+    .build()
+
+// Start recording after 30 seconds
+val config = SdkConfiguration.Builder(apiKey)
+    .delayAutoStartRecording(SdkConfiguration.DELAY_30_SECONDS)
+    .build()
+
+// Start recording after 2 minutes (using TimeUnit)
+val config = SdkConfiguration.Builder(apiKey)
+    .delayAutoStartRecording(2, TimeUnit.MINUTES)
+    .build()
+
+// Disable auto-start completely (manual control only)
+val config = SdkConfiguration.Builder(apiKey)
+    .delayAutoStartRecording(SdkConfiguration.NEVER)
+    .build()
+```
+
+### Custom Foreground Notification
+
+Customize the notification shown when the SDK is running as a foreground service:
+
+```kotlin
+class CustomNotificationFactory : ForegroundNotificationFactory {
+    override fun createNotification(context: Context): Notification {
+        return NotificationCompat.Builder(context, "sdk_channel")
+            .setContentTitle("Truemetrics SDK Running")
+            .setContentText("Collecting sensor data...")
+            .setSmallIcon(R.drawable.ic_sensors)
+            .setOngoing(true)
+            .build()
     }
 }
 
+val config = SdkConfiguration.Builder(apiKey)
+    .foregroundNotificationFactory(CustomNotificationFactory())
+    .build()
 ```
 
-### Declare dependency on TruemetricsSDK
+---
 
-Inside your `build.gradle` add the following dependency:
+## Core Features
 
-```json
-implementation 'io.truemetrics:truemetricssdk:1.0.20'
-```
-
-### Initialize SDK
-
-SDK behaves like a singleton object that manages its own internal state. Before actually using the SDK you need to initialize it:
+### Recording Management
 
 ```kotlin
-TruemetricsSDK.initialize(
-    context,
-    Config(apiKey = "YOUR-API-KEY")
-)
+val sdk = TruemetricsSdk.getInstance()
+
+// Start recording
+sdk.startRecording()
+
+// Stop recording
+sdk.stopRecording()
+
+// Check recording status
+val isRecording = sdk.isRecordingInProgress()
+val isStopped = sdk.isRecordingStopped()
+
+// Get recording start time
+val startTime = sdk.getRecordingStartTime() // Returns timestamp in milliseconds
 ```
 
-`Config` object also accepts Boolean `debug` parameter. Set it to `true` if you want to see LogCat output of the SDK. Make sure the parameter is `false` for release builds.
+### Metadata Logging
 
-### Foreground service and notification
-
-In order to reliably collect data, SDK starts a Foreground service and shows a notification while recording is in progress.
-
-By default, SDK uses it's own notification for this purpose.
-
-If you want to use your own, you can pass it in `Config` object as `foregroundNotification` parameter.
-
-Make sure to ask user for notification permission if device runs Android 13 or later.
-
-Below you can find sample code for creating notification channel and `Notification` itself.
-
-Creating a notification channel using `NotificationManagerCompat`:
+Attach custom metadata to your recordings for better analysis:
 
 ```kotlin
-private val notificationManager = NotificationManagerCompat.from(context)
+// Log user information
+sdk.logMetadata(mapOf(
+    "userId" to "user123",
+    "sessionId" to "session_abc",
+    "appVersion" to "1.2.3"
+))
 
-notificationManager.createNotificationChannel(
-    NotificationChannelCompat.Builder("FOREGROUND_SERVICE_CHANNEL", NotificationManagerCompat.IMPORTANCE_LOW)
-        .setName("Foreground service notification title")
-        .setShowBadge(false)
-        .build()
-)
+// Log event-specific data
+sdk.logMetadata(mapOf(
+    "eventType" to "navigation",
+    "destination" to "profile_screen",
+    "timestamp" to System.currentTimeMillis().toString()
+))
 ```
 
-Creating a notification:
+### Lifecycle Integration
+
+The SDK automatically handles Android application lifecycle events, but you can also integrate with
+your own lifecycle observers:
 
 ```kotlin
-val notification = NotificationCompat.Builder(context, "FOREGROUND_SERVICE_CHANNEL")
-            .setContentTitle("Foreground notification title")
-            .setSmallIcon(R.drawable.ic_notification_logo)
-            .setOngoing(true)
-		    .build()
+class MyActivity : AppCompatActivity() {
+    private val sdk = TruemetricsSdk.getInstance()
+    
+    override fun onResume() {
+        super.onResume()
+        // SDK automatically handles app resume
+    }
+    
+    override fun onPause() {
+        super.onPause()
+        // SDK continues running in background service
+    }
+}
 ```
 
-You can find example snippets for creating a notification channel and accompanying notification in the [Demo app](https://github.com/TRUE-Metrics-io/truemetrics_android_demo_app_p).
+### Complete Cleanup
 
-### Status callback
-
-Set SDK status callback to get notified about SDK state changes and potential errors:
+When you need to completely shut down the SDK:
 
 ```kotlin
-TruemetricsSDK.setStatusListener(object : StatusListener{
-    override fun onStateChange(state: State) {
-        when(state) {
-            State.UNINITIALIZED -> {
-                // SDK is in UNINITIALIZED state
-            }
-            State.INITIALIZED -> {
-                // SDK is initialized, start recording immediately if needed
-                TruemetricsSDK.startRecording()
-            }
-            State.RECORDING_IN_PROGRESS -> {
-                // Recording is in progress
-            }
-            State.RECORDING_STOPPED -> {
-                // Recording has stopped
-            }
+sdk.deinitialize()
+```
+
+**⚠️ Warning:** After calling `deinitialize()`, the SDK instance becomes unusable. You must call
+`init()` again to use the SDK.
+
+---
+
+## Best Practices
+
+### 1. Initialization
+
+- Always initialize in your `Application` class
+- Use the application context, not activity context
+- Initialize once and reuse the singleton instance
+
+```kotlin
+class MyApp : Application() {
+    override fun onCreate() {
+        super.onCreate()
+        
+        val config = SdkConfiguration.Builder(BuildConfig.TRUEMETRICS_API_KEY)
+            .delayAutoStartRecording(SdkConfiguration.DELAY_30_SECONDS)
+            .build()
+            
+        TruemetricsSdk.init(this, config)
+    }
+}
+```
+
+### 2. Recording Management
+
+- Check recording status before starting/stopping
+- Use metadata to provide context for your recordings
+- Consider auto-start delays for better user experience
+
+```kotlin
+fun startDataCollection() {
+    val sdk = TruemetricsSdk.getInstance()
+    
+    if (!sdk.isRecordingInProgress()) {
+        // Log session context
+        sdk.logMetadata(mapOf(
+            "sessionType" to "user_initiated",
+            "feature" to "data_analysis"
+        ))
+        
+        sdk.startRecording()
+    }
+}
+```
+
+### 3. Data Observation
+
+- Use lifecycle-aware components when observing flows
+- Only observe flows when you need the data
+- Handle null values appropriately
+
+```kotlin
+class MyViewModel : ViewModel() {
+    private val sdk = TruemetricsSdk.getInstance()
+    
+    val sensorStats = sdk.observerSensorStats()
+        .flowOn(Dispatchers.IO)
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
+}
+```
+
+### 4. Error Handling
+
+```kotlin
+// Monitor SDK status for errors
+sdk.observeSdkStatus().collect { status ->
+    when (status) {
+        Status.Error -> {
+            // Handle SDK errors
+            // Consider reinitializing or notifying user
+        }
+        Status.Running -> {
+            // SDK is healthy
+        }
+        else -> {
+            // Handle other states
         }
     }
-    override fun onError(errorCode: ErrorCode, message: String?) {}
-    override fun askPermissions(permissions: List<String>) {}
-})
+}
 ```
 
-`onError` callback will be invoked when something happens that prevents SDK from operating, e.g. API KEY authorization fails, device storage gets full, etc.
+### 5. Resource Management
 
-Possible error codes:
+- Only call `deinitialize()` when you're completely done with the SDK
+- Use appropriate lifecycle scopes for flow collection
+- Monitor storage usage in production apps
 
-| Error code | Description |
-| --- | --- |
-| AUTHENTICATION_ERROR | API key is not valid, expired or revoked |
-| UPLOAD_ERROR | Recordings couldn't be uploaded after exhausting all attempts |
-| STORAGE_FULL | Device storage is full which prevents saving sensor readings |
-| MISSING_NOTIFICATION_PERMISSION | Permission to post notification is not granted which means that Foreground service cannot be started |
-| SENSORS_NOT_WORKING | Some sensors are not wokring as intented. Error message should indicate if any required permissions are missing |
+---
 
-`askPermissions` callback will be invoked based on necesarry permissions for enabled sensors in remote configuration. At the moment, list of permission can include:
-- `android.permission.READ_PHONE_STATE`
-- `android.permission.ACTIVITY_RECOGNITION`
-- `android.permission.ACCESS_COARSE_LOCATION`
-- `android.permission.ACCESS_FINE_LOCATION`
-- `android.permission.ACCESS_BACKGROUND_LOCATION`
+### Debugging
 
-**Please note:**
-
-We recommend that you implement status callback and handle at least SENSORS_NOT_WORKING error by stopping recording and notifying user that device may be faulty if app is given all necessary permissions but error still persists.
-
-### Start recording
+Monitor SDK status for diagnostic information:
 
 ```kotlin
-TruemetricsSDK.startRecording()
+sdk.observeSdkStatus().collect { status ->
+    Log.d("SDK_DEBUG", "Current status: $status")
+}
 ```
 
-Starting the recording also starts Foreground service and shows notification supplied in `Config` in system's status bar. Recording will continue even when app exits.
+---
 
-### Stop recording
+## API Reference
 
-```kotlin
-TruemetricsSDK.stopRecording()
-```
+### TruemetricsSdk
 
-Stopping recording also stops Foreground service and removes notification.
+| Method                          | Return Type         | Description                     |
+|---------------------------------|---------------------|---------------------------------|
+| `init(context, config)`         | `TruemetricsSdk`    | Initialize SDK (static)         |
+| `getInstance()`                 | `TruemetricsSdk`    | Get singleton instance (static) |
+| `startRecording()`              | `Unit`              | Start sensor recording          |
+| `stopRecording()`               | `Unit`              | Stop sensor recording           |
+| `isRecordingInProgress()`       | `Boolean`           | Check if recording active       |
+| `isRecordingStopped()`          | `Boolean`           | Check if recording stopped      |
+| `logMetadata(payload)`          | `Unit`              | Log custom metadata             |
+| `setAllSensorsEnabled(enabled)` | `Unit`              | Enable/disable all sensors      |
+| `getAllSensorsEnabled()`        | `Boolean`           | Get sensor enable status        |
+| `getRecordingStartTime()`       | `Long`              | Get recording start timestamp   |
+| `getDatabaseSize()`             | `String`            | Get current database size       |
+| `getActiveConfig()`             | `SdkConfiguration?` | Get active configuration        |
+| `deinitialize()`                | `Unit`              | Shutdown SDK completely         |
 
-### Log metadata
+### Observable Flows
 
-```kotlin
-TruemetricsSDK.logMetadata(payload: Map<String, String>)
-```
-SDK will serialize payload into JSON.
+| Flow              | Type                              | Description              |
+|-------------------|-----------------------------------|--------------------------|
+| `deviceIdFlow`    | `StateFlow<String?>`              | Unique device identifier |
+| `sensorStats`     | `StateFlow<List<SensorStats>>`    | Sensor statistics        |
+| `trafficInfo`     | `StateFlow<TrafficInfo>`          | Network usage data       |
+| `recordingsCount` | `StateFlow<Long>`                 | Number of recordings     |
+| `databaseSize`    | `StateFlow<String>`               | Database size string     |
+| `sensorInfo`      | `StateFlow<Iterable<SensorInfo>>` | Available sensors info   |
+| `sdkStatus`       | `StateFlow<Status>`               | SDK operational status   |
 
-Most of our customers query the data by customer adresses. That means, that most costumers call the [entrance endpoint](https://docu.truemetrics.cloud/api-reference/endpoint/entrances#query-parameters) by using the customer's address as an identifier. Other customers seek more flexibility and also want to query data by an identifier for a route or a courier.
+### Observer Methods
 
-By [sending this information](https://docu.truemetrics.cloud/functions#log-metatada) from your app to our SDK, we enable you to filter the results by these identifiers later on.
-If you're unsure about best practices for your use case, reach out, and we'll guide you to the best solution or take a deeper look into the [metadata chapter](https://docu.truemetrics.cloud/metadata)
+| Method                     | Return Type                | Description                 |
+|----------------------------|----------------------------|-----------------------------|
+| `observeSdkStatus()`       | `Flow<Status>`             | Observe SDK status changes  |
+| `observerSensorStats()`    | `Flow<List<SensorStats>>`  | Observe sensor statistics   |
+| `observerTrafficInfo()`    | `Flow<TrafficInfo>`        | Observe network traffic     |
+| `observerRecordingCount()` | `Flow<Long>`               | Observe recording count     |
+| `observeDatabaseSize()`    | `Flow<String>`             | Observe database size       |
+| `getStorageInfo()`         | `Flow<String>`             | Observe storage information |
+| `getActiveConfigFlow()`    | `Flow<SdkConfiguration?>?` | Observe config changes      |
 
-
-### Deinitialize SDK
-
-```kotlin
-TruemetricsSDK.deinitialize()
-```
-De-initialization stops recording if in progress and tears down the SDK and cancels all scheduled uploads.
