@@ -76,32 +76,6 @@ val config = SdkConfiguration.Builder("YOUR_API_KEY")
     .build()
 ```
 
-### Auto-Start Recording Configuration
-
-The SDK can automatically start recording after initialization with configurable delays:
-
-```kotlin
-// Start recording immediately after initialization
-val config = SdkConfiguration.Builder(apiKey)
-    .delayAutoStartRecording(SdkConfiguration.AUTO_START_ON_INIT)
-    .build()
-
-// Start recording after 30 seconds
-val config = SdkConfiguration.Builder(apiKey)
-    .delayAutoStartRecording(SdkConfiguration.DELAY_30_SECONDS)
-    .build()
-
-// Start recording after 2 minutes (using TimeUnit)
-val config = SdkConfiguration.Builder(apiKey)
-    .delayAutoStartRecording(2, TimeUnit.MINUTES)
-    .build()
-
-// Disable auto-start completely (manual control only)
-val config = SdkConfiguration.Builder(apiKey)
-    .delayAutoStartRecording(SdkConfiguration.NEVER)
-    .build()
-```
-
 ### Custom Foreground Notification
 
 Customize the notification shown when the SDK is running as a foreground service:
