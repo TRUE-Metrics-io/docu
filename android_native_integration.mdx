@@ -1,6 +1,9 @@
+---
+title: 'Android Native Integration'
+description: 'Details on how to integrative to Android'
+---
 
-
-The Truemetrics SDK provides advanced sensor data collection and analytics capabilities for Android
+The truemetrics SDK provides advanced sensor data collection and analytics capabilities for Android
 applications. This guide covers all aspects of integrating and using the SDK effectively.
 
 ## Table of Contents
@@ -16,7 +19,7 @@ applications. This guide covers all aspects of integrating and using the SDK eff
 
 ## Installation
 
-Add the Truemetrics SDK to your app's `build.gradle` file:
+Add the truemetrics SDK to your app's `build.gradle` file:
 
 ```gradle
 dependencies {
@@ -37,7 +40,7 @@ class MyApplication : Application() {
         val config = SdkConfiguration.Builder("YOUR_API_KEY")
             .build()
             
-        TruemetricsSdk.init(this, config)
+        truemetricsSdk.init(this, config)
     }
 }
 ```
@@ -46,7 +49,7 @@ class MyApplication : Application() {
 
 ```kotlin
 // Get SDK instance
-val sdk = TruemetricsSdk.getInstance()
+val sdk = truemetricsSdk.getInstance()
 
 // Start recording sensor data
 sdk.startRecording()
@@ -107,7 +110,7 @@ Customize the notification shown when the SDK is running as a foreground service
 class CustomNotificationFactory : ForegroundNotificationFactory {
     override fun createNotification(context: Context): Notification {
         return NotificationCompat.Builder(context, "sdk_channel")
-            .setContentTitle("Truemetrics SDK Running")
+            .setContentTitle("truemetrics SDK Running")
             .setContentText("Collecting sensor data...")
             .setSmallIcon(R.drawable.ic_sensors)
             .setOngoing(true)
@@ -127,7 +130,7 @@ val config = SdkConfiguration.Builder(apiKey)
 ### Recording Management
 
 ```kotlin
-val sdk = TruemetricsSdk.getInstance()
+val sdk = truemetricsSdk.getInstance()
 
 // Start recording
 sdk.startRecording()
@@ -170,7 +173,7 @@ your own lifecycle observers:
 
 ```kotlin
 class MyActivity : AppCompatActivity() {
-    private val sdk = TruemetricsSdk.getInstance()
+    private val sdk = truemetricsSdk.getInstance()
     
     override fun onResume() {
         super.onResume()
@@ -214,7 +217,7 @@ class MyApp : Application() {
             .delayAutoStartRecording(SdkConfiguration.DELAY_30_SECONDS)
             .build()
             
-        TruemetricsSdk.init(this, config)
+        truemetricsSdk.init(this, config)
     }
 }
 ```
@@ -227,7 +230,7 @@ class MyApp : Application() {
 
 ```kotlin
 fun startDataCollection() {
-    val sdk = TruemetricsSdk.getInstance()
+    val sdk = truemetricsSdk.getInstance()
     
     if (!sdk.isRecordingInProgress()) {
         // Log session context
@@ -249,7 +252,7 @@ fun startDataCollection() {
 
 ```kotlin
 class MyViewModel : ViewModel() {
-    private val sdk = TruemetricsSdk.getInstance()
+    private val sdk = truemetricsSdk.getInstance()
     
     val sensorStats = sdk.observerSensorStats()
         .flowOn(Dispatchers.IO)
@@ -303,12 +306,12 @@ sdk.observeSdkStatus().collect { status ->
 
 ## API Reference
 
-### TruemetricsSdk
+### truemetricsSdk
 
 | Method                          | Return Type         | Description                     |
 |---------------------------------|---------------------|---------------------------------|
-| `init(context, config)`         | `TruemetricsSdk`    | Initialize SDK (static)         |
-| `getInstance()`                 | `TruemetricsSdk`    | Get singleton instance (static) |
+| `init(context, config)`         | `truemetricsSdk`    | Initialize SDK (static)         |
+| `getInstance()`                 | `truemetricsSdk`    | Get singleton instance (static) |
 | `startRecording()`              | `Unit`              | Start sensor recording          |
 | `stopRecording()`               | `Unit`              | Stop sensor recording           |
 | `isRecordingInProgress()`       | `Boolean`           | Check if recording active       |
