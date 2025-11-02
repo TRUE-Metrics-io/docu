@@ -71,9 +71,10 @@ Location data includes recorded entrances and parking places, typically stored a
 _type: STRING (multiple) |_  The Address is the the primary key, which can be either an address ID or the actual address string depending on what you send as metadata. Multiple entrances detected across deliveries are aggregated into a single, more accurate location. Multiple parking places can also be provided, depending on your visualization needs. Please discuss specific requirements with your support contact.
 #### Position ID
 _type: STRING |_ Truemetrics’ internal identifier for the position. While unique, this ID may change; avoid using it for filtering.
-#### Geometry 
-_type: GEOOBJECT |_ Latitude and longitude coordinates of the entrance or parking place stored as geometry columns ([Geometry columns in Geoparquet](https://geoparquet.org/releases/v1.0.0/)
-) 
+#### Rank 
+_type: INTEGER |_ This integer represents the rank of an entrance or parking place. truemetrics groups entrances and parking places based on a shared merge identifier (typically the address identifier). In some configurations, multiple entrances or parking places may be exported for the same merge identifier. The rank determines their order and priority within that group.
+
+
 #### Position Latitude and longitude 
 _type: FLOAT (UTC seconds) |_ Latitude and longitude coordinates of the location as float (same as geometry only different format)
 #### Position Type
