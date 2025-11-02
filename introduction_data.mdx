@@ -76,6 +76,9 @@ _type: FLOAT (Degrees) |_ Latitude and longitude coordinates of the entrance or 
 ) 
 #### Position Type
 _type: STRING |_ This string specifies whether the position is a parking spot or an entrance.
+
+#### Rank
+_type: INTEGER |_ This integer represents the rank of an entrance or parking place. truemetrics groups entrances and parking places based on a shared merge identifier (typically the address identifier). In some configurations, multiple entrances or parking places may be exported for the same merge identifier. The rank determines their order and priority within that group.
 #### Timestamp
 _type: FLOAT (UTC seconds) |_ Timestamp in UTC seconds when the position was calculated, typically a few hours after delivery.
 #### Accuracy
