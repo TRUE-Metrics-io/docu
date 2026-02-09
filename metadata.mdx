@@ -158,10 +158,12 @@ sdk.removeMetadataTag("current_delivery")
 | `getMetadataTemplateNames()` | `Set<String>` | List all templates |
 | `removeMetadataTemplate(name)` | `Boolean` | Remove template |
 | `createMetadataFromTemplate(tag, template)` | `Boolean` | Create tag from template |
-| `appendToMetadataTag(tag, data)` | `Unit` | Append to tagged metadata |
+| `appendToMetadataTag(tag, data)` | `Unit` | Append map to tagged metadata |
+| `appendToMetadataTag(tag, key, value)` | `Unit` | Append single key-value to tag |
 | `getMetadataByTag(tag)` | `Map?` | Get tagged metadata |
 | `getMetadataTags()` | `Set<String>` | Get all active tags |
 | `logMetadataByTag(tag)` | `Boolean` | Log tagged metadata |
 | `removeMetadataTag(tag)` | `Boolean` | Remove tag |
+| `removeFromMetadataTag(tag, key)` | `Boolean` | Remove key from tag |
 | `clearAllMetadata()` | `Unit` | Clear all templates and tags |
 

@@ -335,7 +335,7 @@ fun checkSdkHealth() {
 | `logMetadata(payload)` | `Unit` | Log custom metadata |
 | `setAllSensorsEnabled(enabled)` | `Unit` | Enable/disable all sensors |
 | `getAllSensorsEnabled()` | `Boolean` | Get sensor enable status |
-| `getActiveConfig()` | `SdkConfiguration?` | Get active configuration |
+| `getActiveConfig()` | `Configuration?` | Get active backend configuration |
 | `getUploadStatistics()` | `UploadStatistics?` | Get upload stats |
 | `getSensorStatistics()` | `List<SensorStatistics>?` | Get sensor stats |
 | `deinitialize()` | `Unit` | Shutdown SDK completely |
@@ -347,7 +347,7 @@ fun checkSdkHealth() {
 | `sensorInfo` | `StateFlow<Iterable<SensorInfo>>` | Available sensors info |
 | `sdkStatus` | `StateFlow<Status>` | SDK operational status |
 | `observeSdkStatus()` | `Flow<Status>` | Observe SDK status changes |
-| `getActiveConfigFlow()` | `Flow<SdkConfiguration?>?` | Observe config changes |
+| `getActiveConfigFlow()` | `Flow<Configuration>?` | Observe backend config changes |
 
 ### Data Classes
 
