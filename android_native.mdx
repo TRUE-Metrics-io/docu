@@ -75,12 +75,13 @@ val config = SdkConfiguration.Builder("YOUR_API_KEY").build()
 
 ### Custom Foreground Notification
 
-Customize the notification shown when the SDK is running as a foreground service:
+Customize the notification shown when the SDK is running as a foreground service using the SDK's notification channel:
 
 ```kotlin
 class CustomNotificationFactory : ForegroundNotificationFactory {
     override fun createNotification(context: Context): Notification {
-        return NotificationCompat.Builder(context, "sdk_channel")
+        // Use SDK's notification channel ID
+        return NotificationCompat.Builder(context, "FOREGROUND_SERVICE")
             .setContentTitle("Truemetrics SDK Running")
             .setContentText("Collecting sensor data...")
             .setSmallIcon(R.drawable.ic_sensors)
@@ -230,12 +231,12 @@ sdk.observeSdkStatus().collect { status ->
 | Error Code | Description |
 | --- | --- |
 | AUTHENTICATION_ERROR | API key is not valid, expired or revoked |
-| UPLOAD_ERROR | Recordings couldn't be uploaded |
-| STORAGE_FULL | Device storage is full |
-| MISSING_NOTIFICATION_PERMISSION | Notification permission not granted |
+| UPLOAD_ERROR | Recordings couldn't be uploaded after exhausting all attempts |
+| STORAGE_FULL | Device storage is full which prevents saving sensor readings |
+| MISSING_NOTIFICATION_PERMISSION | Notification permission not granted, foreground service cannot start |
 | CONFIG_ERROR | Configuration error |
 | TRAFFIC_USED_UP | All allotted traffic has been used |
-| SENSORS_NOT_WORKING | Sensors are not working properly |
+| SENSORS_NOT_WORKING | Some sensors are not working. Check if permissions are missing |
 
 ---
 
@@ -311,7 +312,7 @@ fun checkSdkHealth() {
 
     val sensorStats = sdk.getSensorStatistics()
     sensorStats?.filter { it.quality == SensorDataQuality.BAD }?.forEach {
-        Log.w("SDK", "Poor quality for: ${it.sensorName}")
+        Log.w("SDK", "Bad quality for: ${it.sensorName}")
     }
 }
 ```

@@ -47,12 +47,13 @@ class MyApplication : Application() {
 
 ### Custom Foreground Notification
 
-The SDK runs as a foreground service and shows a notification while recording. You can customize this notification:
+The SDK runs as a foreground service and shows a notification while recording. You can customize this notification using the SDK's notification channel:
 
 ```kotlin
 class CustomNotificationFactory : ForegroundNotificationFactory {
     override fun createNotification(context: Context): Notification {
-        return NotificationCompat.Builder(context, "sdk_channel")
+        // Use SDK's notification channel ID
+        return NotificationCompat.Builder(context, "FOREGROUND_SERVICE")
             .setContentTitle("Truemetrics SDK Running")
             .setContentText("Collecting sensor data...")
             .setSmallIcon(R.drawable.ic_notification)
