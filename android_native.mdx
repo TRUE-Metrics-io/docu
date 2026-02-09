@@ -1,9 +1,9 @@
 ---
 title: 'Android Native Integration'
-description: 'Details on how to integrative to Android'
+description: 'Complete guide for integrating Truemetrics SDK 1.4.0 into Android applications'
 ---
 
-The truemetrics SDK provides advanced sensor data collection and analytics capabilities for Android
+The Truemetrics SDK provides advanced sensor data collection and analytics capabilities for Android
 applications. This guide covers all aspects of integrating and using the SDK effectively.
 
 ## Table of Contents
@@ -12,6 +12,8 @@ applications. This guide covers all aspects of integrating and using the SDK eff
 - [Quick Start](#quick-start)
 - [Configuration](#configuration)
 - [Core Features](#core-features)
+- [SDK Status](#sdk-status)
+- [Statistics API](#statistics-api)
 - [Best Practices](#best-practices)
 - [API Reference](#api-reference)
 
@@ -19,11 +21,11 @@ applications. This guide covers all aspects of integrating and using the SDK eff
 
 ## Installation
 
-Add the truemetrics SDK to your app's `build.gradle` file:
+Add the Truemetrics SDK to your app's `build.gradle` file:
 
 ```gradle
 dependencies {
-    implementation 'io.truemetrics:truemetrics-sdk:VERSION'
+    implementation 'io.truemetrics:truemetricssdk:1.4.0'
 }
 ```
 
@@ -35,12 +37,9 @@ dependencies {
 class MyApplication : Application() {
     override fun onCreate() {
         super.onCreate()
-        
-        // Basic configuration
-        val config = SdkConfiguration.Builder("YOUR_API_KEY")
-            .build()
-            
-        truemetricsSdk.init(this, config)
+
+        val config = SdkConfiguration.Builder("YOUR_API_KEY").build()
+        TruemetricsSdk.init(this, config)
     }
 }
 ```
@@ -48,8 +47,7 @@ class MyApplication : Application() {
 ### 2. Start and stop recordings
 
 ```kotlin
-// Get SDK instance
-val sdk = truemetricsSdk.getInstance()
+val sdk = TruemetricsSdk.getInstance()
 
 // Start recording sensor data
 sdk.startRecording()
@@ -67,24 +65,24 @@ if (sdk.isRecordingInProgress()) {
 
 ## Configuration
 
-The SDK is configured using the `SdkConfiguration.Builder` class. Here are all available options:
+The SDK is configured using the `SdkConfiguration.Builder` class.
 
 ### Basic Configuration
 
 ```kotlin
-val config = SdkConfiguration.Builder("YOUR_API_KEY")
-    .build()
+val config = SdkConfiguration.Builder("YOUR_API_KEY").build()
 ```
 
 ### Custom Foreground Notification
 
-Customize the notification shown when the SDK is running as a foreground service:
+Customize the notification shown when the SDK is running as a foreground service using the SDK's notification channel:
 
 ```kotlin
 class CustomNotificationFactory : ForegroundNotificationFactory {
     override fun createNotification(context: Context): Notification {
-        return NotificationCompat.Builder(context, "sdk_channel")
-            .setContentTitle("truemetrics SDK Running")
+        // Use SDK's notification channel ID
+        return NotificationCompat.Builder(context, "FOREGROUND_SERVICE")
+            .setContentTitle("Truemetrics SDK Running")
             .setContentText("Collecting sensor data...")
             .setSmallIcon(R.drawable.ic_sensors)
             .setOngoing(true)
@@ -92,7 +90,7 @@ class CustomNotificationFactory : ForegroundNotificationFactory {
     }
 }
 
-val config = SdkConfiguration.Builder(apiKey)
+val config = SdkConfiguration.Builder("YOUR_API_KEY")
     .foregroundNotificationFactory(CustomNotificationFactory())
     .build()
 ```
@@ -104,7 +102,7 @@ val config = SdkConfiguration.Builder(apiKey)
 ### Recording Management
 
 ```kotlin
-val sdk = truemetricsSdk.getInstance()
+val sdk = TruemetricsSdk.getInstance()
 
 // Start recording
 sdk.startRecording()
@@ -120,57 +118,162 @@ val isStopped = sdk.isRecordingStopped()
 val startTime = sdk.getRecordingStartTime() // Returns timestamp in milliseconds
 ```
 
-### Metadata Logging
+### Device ID
 
-Attach custom metadata to your recordings for better analysis:
+Get the unique device identifier (available after initialization):
 
 ```kotlin
-// Log user information
+val deviceId = sdk.getDeviceId()
+
+// Or get from Status
+sdk.observeSdkStatus().collect { status ->
+    when (status) {
+        is Status.Initialized -> println("Device ID: ${status.deviceId}")
+        is Status.RecordingInProgress -> println("Device ID: ${status.deviceId}")
+        else -> {}
+    }
+}
+```
+
+### Metadata Logging
+
+Attach custom metadata to your recordings:
+
+```kotlin
 sdk.logMetadata(mapOf(
     "userId" to "user123",
     "sessionId" to "session_abc",
     "appVersion" to "1.2.3"
 ))
-
-// Log event-specific data
-sdk.logMetadata(mapOf(
-    "eventType" to "navigation",
-    "destination" to "profile_screen",
-    "timestamp" to System.currentTimeMillis().toString()
-))
 ```
 
-### Lifecycle Integration
+For advanced metadata with templates and tags, see [Metadata Guide](/metadata).
 
-The SDK automatically handles Android application lifecycle events, but you can also integrate with
-your own lifecycle observers:
+### Sensor Management
 
 ```kotlin
-class MyActivity : AppCompatActivity() {
-    private val sdk = truemetricsSdk.getInstance()
-    
-    override fun onResume() {
-        super.onResume()
-        // SDK automatically handles app resume
-    }
-    
-    override fun onPause() {
-        super.onPause()
-        // SDK continues running in background service
+// Enable/disable all sensors
+sdk.setAllSensorsEnabled(true)
+
+// Check if sensors are enabled
+val enabled = sdk.getAllSensorsEnabled()
+
+// Observe available sensors
+sdk.sensorInfo.collect { sensors ->
+    sensors.forEach { sensor ->
+        println("Sensor: ${sensor.sensorName}, Status: ${sensor.sensorStatus}")
+        println("Frequency: ${sensor.frequency} Hz")
+        if (sensor.missingPermissions.isNotEmpty()) {
+            println("Missing permissions: ${sensor.missingPermissions}")
+        }
     }
 }
 ```
 
 ### Complete Cleanup
 
-When you need to completely shut down the SDK:
-
 ```kotlin
 sdk.deinitialize()
 ```
 
-**⚠️ Warning:** After calling `deinitialize()`, the SDK instance becomes unusable. You must call
+**Warning:** After calling `deinitialize()`, the SDK instance becomes unusable. You must call
 `init()` again to use the SDK.
+
+---
+
+## SDK Status
+
+Monitor the SDK state using `observeSdkStatus()`:
+
+```kotlin
+sdk.observeSdkStatus().collect { status ->
+    when (status) {
+        is Status.Uninitialized -> {
+            // SDK not yet initialized
+        }
+        is Status.Initialized -> {
+            // SDK initialized, deviceId available
+            val deviceId = status.deviceId
+        }
+        is Status.RecordingInProgress -> {
+            // Recording is active
+            val deviceId = status.deviceId
+        }
+        is Status.RecordingStopped -> {
+            // Recording has stopped
+        }
+        is Status.DelayedStart -> {
+            // Waiting for auto-start delay
+            val deviceId = status.deviceId
+            val delayMs = status.delayMs
+        }
+        is Status.TrafficLimitReached -> {
+            // Traffic limit reached
+        }
+        is Status.ReadingsDatabaseFull -> {
+            // Device storage full
+        }
+        is Status.Error -> {
+            // SDK encountered an error
+            val errorCode = status.errorCode
+            val message = status.message
+        }
+        is Status.AskForPermissions -> {
+            // SDK requesting permissions
+            val permissions = status.permissions
+        }
+    }
+}
+```
+
+### Error Codes
+
+| Error Code | Description |
+| --- | --- |
+| AUTHENTICATION_ERROR | API key is not valid, expired or revoked |
+| UPLOAD_ERROR | Recordings couldn't be uploaded after exhausting all attempts |
+| STORAGE_FULL | Device storage is full which prevents saving sensor readings |
+| MISSING_NOTIFICATION_PERMISSION | Notification permission not granted, foreground service cannot start |
+| CONFIG_ERROR | Configuration error |
+| TRAFFIC_USED_UP | All allotted traffic has been used |
+| SENSORS_NOT_WORKING | Some sensors are not working. Check if permissions are missing |
+
+---
+
+## Statistics API
+
+### Upload Statistics
+
+Monitor upload health:
+
+```kotlin
+val uploadStats = sdk.getUploadStatistics()
+if (uploadStats != null) {
+    println("Successful uploads: ${uploadStats.successfulUploadsCount}")
+    println("Last upload: ${uploadStats.lastSuccessfulUploadTimestamp}")
+}
+```
+
+### Sensor Statistics
+
+Get detailed sensor data quality:
+
+```kotlin
+val sensorStats = sdk.getSensorStatistics()
+sensorStats?.forEach { stat ->
+    println("Sensor: ${stat.sensorName}")
+    println("Configured: ${stat.configuredFrequencyHz} Hz")
+    println("Actual: ${stat.actualFrequencyHz} Hz")
+    println("Quality: ${stat.quality}")
+}
+```
+
+Quality levels:
+- **EXCELLENT**: 95-100% of configured frequency
+- **GOOD**: 80-95%
+- **POOR**: 50-80%
+- **BAD**: less than 50%
+- **UNKNOWN**: no data or not recording
 
 ---
 
@@ -182,97 +285,35 @@ sdk.deinitialize()
 - Use the application context, not activity context
 - Initialize once and reuse the singleton instance
 
-```kotlin
-class MyApp : Application() {
-    override fun onCreate() {
-        super.onCreate()
-        
-        val config = SdkConfiguration.Builder(BuildConfig.TRUEMETRICS_API_KEY)
-            .delayAutoStartRecording(SdkConfiguration.DELAY_30_SECONDS)
-            .build()
-            
-        truemetricsSdk.init(this, config)
-    }
-}
-```
-
-### 2. Recording Management
-
-- Check recording status before starting/stopping
-- Use metadata to provide context for your recordings
-- Consider auto-start delays for better user experience
+### 2. Error Handling
 
 ```kotlin
-fun startDataCollection() {
-    val sdk = truemetricsSdk.getInstance()
-    
-    if (!sdk.isRecordingInProgress()) {
-        // Log session context
-        sdk.logMetadata(mapOf(
-            "sessionType" to "user_initiated",
-            "feature" to "data_analysis"
-        ))
-        
-        sdk.startRecording()
-    }
-}
-```
-
-### 3. Data Observation
-
-- Use lifecycle-aware components when observing flows
-- Only observe flows when you need the data
-- Handle null values appropriately
-
-```kotlin
-class MyViewModel : ViewModel() {
-    private val sdk = truemetricsSdk.getInstance()
-    
-    val sensorStats = sdk.observerSensorStats()
-        .flowOn(Dispatchers.IO)
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = emptyList()
-        )
-}
-```
-
-### 4. Error Handling
-
-```kotlin
-// Monitor SDK status for errors
 sdk.observeSdkStatus().collect { status ->
     when (status) {
-        Status.Error -> {
-            // Handle SDK errors
-            // Consider reinitializing or notifying user
+        is Status.Error -> {
+            Log.e("SDK", "Error: ${status.errorCode} - ${status.message}")
         }
-        Status.Running -> {
-            // SDK is healthy
+        is Status.ReadingsDatabaseFull -> {
+            Log.w("SDK", "Storage full")
         }
-        else -> {
-            // Handle other states
-        }
+        else -> {}
     }
 }
 ```
 
-### 5. Resource Management
-
-- Only call `deinitialize()` when you're completely done with the SDK
-- Use appropriate lifecycle scopes for flow collection
-- Monitor storage usage in production apps
-
----
-
-### Debugging
-
-Monitor SDK status for diagnostic information:
+### 3. Monitoring SDK Health
 
 ```kotlin
-sdk.observeSdkStatus().collect { status ->
-    Log.d("SDK_DEBUG", "Current status: $status")
+fun checkSdkHealth() {
+    val uploadStats = sdk.getUploadStatistics()
+    if (uploadStats != null && uploadStats.successfulUploadsCount == 0) {
+        Log.w("SDK", "No successful uploads yet")
+    }
+
+    val sensorStats = sdk.getSensorStatistics()
+    sensorStats?.filter { it.quality == SensorDataQuality.BAD }?.forEach {
+        Log.w("SDK", "Bad quality for: ${it.sensorName}")
+    }
 }
 ```
 
@@ -280,45 +321,55 @@ sdk.observeSdkStatus().collect { status ->
 
 ## API Reference
 
-### truemetricsSdk
+### TruemetricsSdk
 
-| Method                          | Return Type         | Description                     |
-|---------------------------------|---------------------|---------------------------------|
-| `init(context, config)`         | `truemetricsSdk`    | Initialize SDK (static)         |
-| `getInstance()`                 | `truemetricsSdk`    | Get singleton instance (static) |
-| `startRecording()`              | `Unit`              | Start sensor recording          |
-| `stopRecording()`               | `Unit`              | Stop sensor recording           |
-| `isRecordingInProgress()`       | `Boolean`           | Check if recording active       |
-| `isRecordingStopped()`          | `Boolean`           | Check if recording stopped      |
-| `logMetadata(payload)`          | `Unit`              | Log custom metadata             |
-| `setAllSensorsEnabled(enabled)` | `Unit`              | Enable/disable all sensors      |
-| `getAllSensorsEnabled()`        | `Boolean`           | Get sensor enable status        |
-| `getRecordingStartTime()`       | `Long`              | Get recording start timestamp   |
-| `getDatabaseSize()`             | `String`            | Get current database size       |
-| `getActiveConfig()`             | `SdkConfiguration?` | Get active configuration        |
-| `deinitialize()`                | `Unit`              | Shutdown SDK completely         |
+| Method | Return Type | Description |
+| --- | --- | --- |
+| `init(context, config)` | `TruemetricsSdk` | Initialize SDK (static) |
+| `getInstance()` | `TruemetricsSdk` | Get singleton instance (static) |
+| `startRecording()` | `Unit` | Start sensor recording |
+| `stopRecording()` | `Unit` | Stop sensor recording |
+| `isRecordingInProgress()` | `Boolean` | Check if recording active |
+| `isRecordingStopped()` | `Boolean` | Check if recording stopped |
+| `getRecordingStartTime()` | `Long` | Get recording start timestamp |
+| `getDeviceId()` | `String?` | Get unique device identifier |
+| `logMetadata(payload)` | `Unit` | Log custom metadata |
+| `setAllSensorsEnabled(enabled)` | `Unit` | Enable/disable all sensors |
+| `getAllSensorsEnabled()` | `Boolean` | Get sensor enable status |
+| `getActiveConfig()` | `Configuration?` | Get active backend configuration |
+| `getUploadStatistics()` | `UploadStatistics?` | Get upload stats |
+| `getSensorStatistics()` | `List<SensorStatistics>?` | Get sensor stats |
+| `deinitialize()` | `Unit` | Shutdown SDK completely |
 
 ### Observable Flows
 
-| Flow              | Type                              | Description              |
-|-------------------|-----------------------------------|--------------------------|
-| `deviceIdFlow`    | `StateFlow<String?>`              | Unique device identifier |
-| `sensorStats`     | `StateFlow<List<SensorStats>>`    | Sensor statistics        |
-| `trafficInfo`     | `StateFlow<TrafficInfo>`          | Network usage data       |
-| `recordingsCount` | `StateFlow<Long>`                 | Number of recordings     |
-| `databaseSize`    | `StateFlow<String>`               | Database size string     |
-| `sensorInfo`      | `StateFlow<Iterable<SensorInfo>>` | Available sensors info   |
-| `sdkStatus`       | `StateFlow<Status>`               | SDK operational status   |
+| Property/Method | Type | Description |
+| --- | --- | --- |
+| `sensorInfo` | `StateFlow<Iterable<SensorInfo>>` | Available sensors info |
+| `sdkStatus` | `StateFlow<Status>` | SDK operational status |
+| `observeSdkStatus()` | `Flow<Status>` | Observe SDK status changes |
+| `getActiveConfigFlow()` | `Flow<Configuration>?` | Observe backend config changes |
 
-### Observer Methods
+### Data Classes
 
-| Method                     | Return Type                | Description                 |
-|----------------------------|----------------------------|-----------------------------|
-| `observeSdkStatus()`       | `Flow<Status>`             | Observe SDK status changes  |
-| `observerSensorStats()`    | `Flow<List<SensorStats>>`  | Observe sensor statistics   |
-| `observerTrafficInfo()`    | `Flow<TrafficInfo>`        | Observe network traffic     |
-| `observerRecordingCount()` | `Flow<Long>`               | Observe recording count     |
-| `observeDatabaseSize()`    | `Flow<String>`             | Observe database size       |
-| `getStorageInfo()`         | `Flow<String>`             | Observe storage information |
-| `getActiveConfigFlow()`    | `Flow<SdkConfiguration?>?` | Observe config changes      |
+#### UploadStatistics
+| Property | Type | Description |
+| --- | --- | --- |
+| `successfulUploadsCount` | `Int` | Total successful uploads |
+| `lastSuccessfulUploadTimestamp` | `Long?` | Last upload timestamp |
 
+#### SensorStatistics
+| Property | Type | Description |
+| --- | --- | --- |
+| `sensorName` | `SensorName` | Sensor identifier |
+| `configuredFrequencyHz` | `Float` | Configured frequency |
+| `actualFrequencyHz` | `Float` | Actual measured frequency |
+| `quality` | `SensorDataQuality` | Quality assessment |
+
+#### SensorInfo
+| Property | Type | Description |
+| --- | --- | --- |
+| `sensorName` | `SensorName` | Sensor identifier |
+| `sensorStatus` | `SensorStatus` | Status: ON, OFF, or NA |
+| `frequency` | `Float` | Polling frequency in Hz |
+| `missingPermissions` | `List<String>` | Required permissions not granted |

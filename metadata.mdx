@@ -22,10 +22,17 @@ If you're unsure, either discuss this with truemetrics or use multiple triggers 
 
 
 # How to send metadata
-Super simple: just add the following line to send metadata as key-value pair.
+
+Basic metadata logging:
+
 ```kotlin
-TruemetricsSDK.logMetadata(payload: Map<String, String>)
+val sdk = TruemetricsSdk.getInstance()
+sdk.logMetadata(mapOf(
+    "userId" to "user123",
+    "orderId" to "order_456"
+))
 ```
+
 For more detailed explanation go to [logging metadata docu](https://docu.truemetrics.cloud/functions#log-metadata)
 
 # Required Metadata Fields
@@ -92,4 +99,71 @@ Especially for parking places,  it's quite interesting to be able to seperate th
 | Example Key   | Example Value        |
 | ------------- | -------------------- |
 | type_vehicle           | car              |
+
+# Advanced Metadata Features
+
+## Metadata Templates
+
+Create reusable templates for consistent metadata structures:
+
+```kotlin
+val sdk = TruemetricsSdk.getInstance()
+
+// Create a template
+sdk.createMetadataTemplate("delivery", mapOf(
+    "type" to "delivery",
+    "version" to "1.0"
+))
+
+// Retrieve a template
+val template = sdk.getMetadataTemplate("delivery")
+
+// List all templates
+val templateNames = sdk.getMetadataTemplateNames()
+
+// Remove a template
+sdk.removeMetadataTemplate("old_template")
+```
+
+## Tagged Metadata
+
+Build metadata incrementally using tags:
+
+```kotlin
+val sdk = TruemetricsSdk.getInstance()
+
+// Create tagged metadata from a template
+sdk.createMetadataFromTemplate("current_delivery", "delivery")
+
+// Add data incrementally
+sdk.appendToMetadataTag("current_delivery", "orderId", "123")
+sdk.appendToMetadataTag("current_delivery", mapOf(
+    "lat" to "52.5",
+    "lon" to "13.4"
+))
+
+// Log when ready
+sdk.logMetadataByTag("current_delivery")
+
+// Clean up
+sdk.removeMetadataTag("current_delivery")
+```
+
+### Tagged Metadata API Reference
+
+| Method | Return Type | Description |
+| --- | --- | --- |
+| `createMetadataTemplate(name, data)` | `Unit` | Create reusable template |
+| `getMetadataTemplate(name)` | `Map<String, String>?` | Get template by name |
+| `getMetadataTemplateNames()` | `Set<String>` | List all templates |
+| `removeMetadataTemplate(name)` | `Boolean` | Remove template |
+| `createMetadataFromTemplate(tag, template)` | `Boolean` | Create tag from template |
+| `appendToMetadataTag(tag, data)` | `Unit` | Append map to tagged metadata |
+| `appendToMetadataTag(tag, key, value)` | `Unit` | Append single key-value to tag |
+| `getMetadataByTag(tag)` | `Map<String, String>?` | Get tagged metadata |
+| `getMetadataTags()` | `Set<String>` | Get all active tags |
+| `logMetadataByTag(tag)` | `Boolean` | Log tagged metadata |
+| `removeMetadataTag(tag)` | `Boolean` | Remove tag |
+| `removeFromMetadataTag(tag, key)` | `Boolean` | Remove key from tag |
+| `clearAllMetadata()` | `Unit` | Clear all templates and tags |
 
