@@ -21,11 +21,21 @@ applications. This guide covers all aspects of integrating and using the SDK eff
 
 ## Installation
 
-Add the Truemetrics SDK to your app's `build.gradle` file:
+Add the following to your root-level `build.gradle` file (or `settings.gradle`):
+
+```gradle
+repositories {
+    maven {
+        url "https://github.com/TRUE-Metrics-io/truemetrics_android_SDK_p_maven/raw/"
+    }
+}
+```
+
+Then add the dependency to your app-level `build.gradle`:
 
 ```gradle
 dependencies {
-    implementation 'io.truemetrics:truemetricssdk:1.4.0'
+    implementation 'io.truemetrics:truemetricssdk:1.4.3'
 }
 ```
 
