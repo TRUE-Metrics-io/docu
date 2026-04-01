@@ -1,6 +1,6 @@
 ---
 title: 'Android Native Integration'
-description: 'Complete guide for integrating Truemetrics SDK 1.4.4 into Android applications'
+description: 'Complete guide for integrating Truemetrics SDK 1.5.0 into Android applications'
 ---
 
 The Truemetrics SDK provides advanced sensor data collection and analytics capabilities for Android
@@ -35,7 +35,7 @@ Then add the dependency to your app-level `build.gradle`:
 
 ```gradle
 dependencies {
-    implementation 'io.truemetrics:truemetricssdk:1.4.4'
+    implementation 'io.truemetrics:truemetricssdk:1.5.0'
 }
 ```
 
@@ -145,6 +145,10 @@ sdk.observeSdkStatus().collect { status ->
 }
 ```
 
+<Note>
+The device ID may rotate automatically based on a server-configured TTL. When expired, a new ID is generated transparently on the next initialization.
+</Note>
+
 ### Metadata Logging
 
 Attach custom metadata to your recordings:
@@ -200,6 +204,10 @@ sdk.observeSdkStatus().collect { status ->
     when (status) {
         is Status.Uninitialized -> {
             // SDK not yet initialized
+        }
+        is Status.Initializing -> {
+            // SDK is fetching config from server
+            // Retries automatically on network errors or server 5xx
         }
         is Status.Initialized -> {
             // SDK initialized, deviceId available
