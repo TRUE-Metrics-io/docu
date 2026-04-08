@@ -23,56 +23,49 @@ If you're unsure, either discuss this with truemetrics or use multiple triggers 
 
 # How to send metadata
 
-Basic metadata logging:
+Use the `StandardMetadata` class to log structured event metadata:
 
 ```kotlin
+import io.truemetrics.truemetricssdk.metadata.StandardMetadata
+
 val sdk = TruemetricsSdk.getInstance()
-sdk.logMetadata(mapOf(
-    "userId" to "user123",
-    "orderId" to "order_456"
+sdk.logMetadata(StandardMetadata(
+    eventTime = "2025-01-15T14:30:00Z",
+    eventType = "delivery_successful",
+    deliveryId = "parcel_123",
+    tourId = "tour_456",
+    waypointLatitude = "52.5200",
+    waypointLongitude = "13.4050",
+    referenceLatitude = "52.5201",
+    referenceLongitude = "13.4051",
+    address = "Pflanzstrasse 5, 10762 Berlin",
+    extra = mapOf(
+        "type_vehicle" to "car",
+        "type_consignee" to "B2C"
+    )
 ))
 ```
 
-For more detailed explanation go to [logging metadata docu](https://docu.truemetrics.cloud/functions#log-metadata)
+<Note>
+The map-based `logMetadata(Map<String, String>)` overload is deprecated. Use `logMetadata(StandardMetadata)` instead.
+</Note>
 
 # Required Metadata Fields
 
+The `StandardMetadata` class contains the following fields. All fields are strings.
 
-## Normalized Addresses
-
-For validation, the normalized address of the delivery is required to be logged into the truemetrics data.
-
-It is best practice to send an object similar to the following example:
-
-| Example Key    | Example Value         |
-| -------------- | --------------------- |
-| country_code   | DE                    |
-| postal_code    | 10762                 |
-| street         | Pflanzstrasse          |
-| house_number   | 5                     |
-
-## Identifiers
-
-Most customers already have internal identifiers for deliveries, parcels, tours, and other related entities.
-
-truemetrics automatically enriches stop KPIs, parking spots, and entrances by using these identifiers. This makes it easier you to track, check, and evaluate truemetrics data.
-
-| Example Key          | Example Value     |
-| -------------------- | ----------------- |
-| identifier_driver    | 1kl234abc            |
-| identifier_tour      | 4d1234abc            |
-| identifier_delivery  | 0a1234abc            |
-| identifier_stop      | 531234abc            |
-| ...                  |  ...             |
-
-## Reference Location
-
-The truemetrics algorithm does not rely on the location to which you are sending your driver. Nevertheless, in the early stages of integration, many customers find it useful to compare the actual delivery location with the expected location to assess the accuracy of the address and geocoder.
-
-| Example Key   | Example Value        |
-| ------------- | -------------------- |
-| lat           | 40.3123              |
-| lon           | 13.533               |
+| Field | Serialized Key | Description |
+| --- | --- | --- |
+| `eventTime` | `t_event` | Timestamp when the event happened |
+| `eventType` | `type_event` | Name of the event, e.g. `pickup_successful`, `delivery_successful`, `delivery_to_neighbor` |
+| `deliveryId` | `id_delivery_external` | External identifier of the delivery, e.g. parcel ID |
+| `tourId` | `id_tour` | Identifier of the tour |
+| `waypointLatitude` | `lat_waypoint_external` | Latitude where the courier is routed to (normally a coordinate on the street) |
+| `waypointLongitude` | `lon_waypoint_external` | Longitude where the courier is routed to (normally a coordinate on the street) |
+| `referenceLatitude` | `lat_reference_external` | Latitude where the courier is sent (building/destination) |
+| `referenceLongitude` | `lon_reference_external` | Longitude where the courier is sent (building/destination) |
+| `address` | `address_raw` | Raw address string, if already normalised available |
+| `extra` | — | Additional key-value pairs (merged into the payload, standard fields take precedence) |
 
 
 

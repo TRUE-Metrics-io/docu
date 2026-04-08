@@ -1,6 +1,6 @@
 ---
 title: 'Android Native Integration'
-description: 'Complete guide for integrating Truemetrics SDK 1.5.0 into Android applications'
+description: 'Complete guide for integrating Truemetrics SDK 1.5.1 into Android applications'
 ---
 
 The Truemetrics SDK provides advanced sensor data collection and analytics capabilities for Android
@@ -35,7 +35,7 @@ Then add the dependency to your app-level `build.gradle`:
 
 ```gradle
 dependencies {
-    implementation 'io.truemetrics:truemetricssdk:1.5.0'
+    implementation 'io.truemetrics:truemetricssdk:1.5.1'
 }
 ```
 
@@ -151,15 +151,26 @@ The device ID may rotate automatically based on a server-configured TTL. When ex
 
 ### Metadata Logging
 
-Attach custom metadata to your recordings:
+Log standardized delivery/pickup event metadata:
 
 ```kotlin
-sdk.logMetadata(mapOf(
-    "userId" to "user123",
-    "sessionId" to "session_abc",
-    "appVersion" to "1.2.3"
+import io.truemetrics.truemetricssdk.metadata.StandardMetadata
+
+sdk.logMetadata(StandardMetadata(
+    eventTime = "2025-01-15T14:30:00Z",
+    eventType = "delivery_successful",
+    deliveryId = "parcel_123",
+    tourId = "tour_456",
+    waypointLatitude = "52.5200",
+    waypointLongitude = "13.4050",
+    referenceLatitude = "52.5201",
+    referenceLongitude = "13.4051",
+    address = "Pflanzstrasse 5, 10762 Berlin",
+    extra = mapOf("type_vehicle" to "car")
 ))
 ```
+
+The map-based `logMetadata(Map<String, String>)` overload is deprecated. Use `logMetadata(StandardMetadata)` instead.
 
 For advanced metadata with templates and tags, see [Metadata Guide](/metadata).
 
@@ -351,7 +362,8 @@ fun checkSdkHealth() {
 | `isRecordingStopped()` | `Boolean` | Check if recording stopped |
 | `getRecordingStartTime()` | `Long` | Get recording start timestamp |
 | `getDeviceId()` | `String?` | Get unique device identifier |
-| `logMetadata(payload)` | `Unit` | Log custom metadata |
+| `logMetadata(standardMetadata)` | `Unit` | Log standardized event metadata |
+| `logMetadata(payload)` *(deprecated)* | `Unit` | Log custom metadata map |
 | `setAllSensorsEnabled(enabled)` | `Unit` | Enable/disable all sensors |
 | `getAllSensorsEnabled()` | `Boolean` | Get sensor enable status |
 | `getActiveConfig()` | `Configuration?` | Get active backend configuration |

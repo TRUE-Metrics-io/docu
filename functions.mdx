@@ -1,6 +1,6 @@
 ---
 title: 'SDK Interface'
-description: 'Overview of the functionality of the Truemetrics Android SDK 1.4.0'
+description: 'Overview of the functionality of the Truemetrics Android SDK 1.5.1'
 ---
 
 ### Setup and Maven Repository
@@ -27,7 +27,7 @@ dependencyResolutionManagement {
 Inside your `build.gradle` add the following dependency:
 
 ```groovy
-implementation 'io.truemetrics:truemetricssdk:1.4.0'
+implementation 'io.truemetrics:truemetricssdk:1.5.1'
 ```
 
 ### Initialize SDK
@@ -165,12 +165,25 @@ val deviceId = sdk.getDeviceId()
 
 ### Log Metadata
 
+Log standardized delivery/pickup event metadata:
+
 ```kotlin
-sdk.logMetadata(mapOf(
-    "userId" to "user123",
-    "sessionId" to "session_abc"
+import io.truemetrics.truemetricssdk.metadata.StandardMetadata
+
+sdk.logMetadata(StandardMetadata(
+    eventTime = "2025-01-15T14:30:00Z",
+    eventType = "delivery_successful",
+    deliveryId = "parcel_123",
+    tourId = "tour_456",
+    waypointLatitude = "52.5200",
+    waypointLongitude = "13.4050",
+    referenceLatitude = "52.5201",
+    referenceLongitude = "13.4051",
+    address = "Pflanzstrasse 5, 10762 Berlin"
 ))
 ```
+
+The map-based `logMetadata(Map<String, String>)` overload is deprecated. Use `logMetadata(StandardMetadata)` instead.
 
 For advanced metadata management with templates and tags, see the [metadata chapter](/metadata).
 
