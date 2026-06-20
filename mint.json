@@ -48,6 +48,12 @@
         "Architecture_of_Export",
         "Update_and_Versioning"
       ]
+    },
+    {
+      "group": "Geodata API",
+      "pages": [
+        "api-reference/endpoint/lastMeterVisualization"
+      ]
     }
   ],
   "footerSocials": {

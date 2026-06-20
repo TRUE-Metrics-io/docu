@@ -1,0 +1,130 @@
+---
+title: "Last-meter visualization"
+description: "GeoJSON (and an optional rendered PNG) of a delivery stop's last-meter geometry — entrance, parking, waypoint and the connecting lines — ready to render on MapLibre / Mapbox."
+---
+
+<Info>
+  Served by the **geodata** API on its own host (not the results API):
+  `https://geodata.truemetrics.cloud/V1` (production) · `https://geodata-stage.truemetrics.cloud/V1` (staging).
+  Authenticated with the geodata **x-api-key**; the customer is resolved from the key.
+</Info>
+
+`GET /lastmetervisualization`
+
+### Query Parameters
+
+<ParamField query="identifier_entrance" type="string">
+  Merge id (`id_address`) of the **entrance**. At least one of `identifier_entrance` /
+  `identifier_parking` is required.
+</ParamField>
+
+<ParamField query="identifier_parking" type="string">
+  Merge id (`id_address`) of the **parking** (the waypoint, if any, shares this id).
+</ParamField>
+
+<ParamField query="raster" type="boolean" default="false">
+  When `true`, the response also includes a rendered PNG of the geometry (with the dashboard
+  marker icons) as a base64 data-URI in a top-level `raster` object.
+</ParamField>
+
+<ParamField query="basemap" type="boolean" default="false">
+  Only with `raster=true`. When `true`, the PNG is drawn over a street basemap; otherwise the
+  background is transparent.
+</ParamField>
+
+<ParamField header="x-api-key" type="string" required>
+  Your geodata API key.
+</ParamField>
+
+### Response
+
+A GeoJSON `FeatureCollection` (EPSG:4326). Each feature's `properties` map 1:1 to MapLibre
+style props (`color` → circle/line-color, `marker_size` → circle-radius, `line_width` →
+line-width).
+
+<ResponseField name="type" type="string">
+  Always `"FeatureCollection"`.
+</ResponseField>
+
+<ResponseField name="features" type="array">
+  - **point** — `point_type` of `entrance` (red), `parking` or `waypoint` (blue); carries
+    `color`, `marker_size`, `icon`.
+  - **line** — `line_type` `parking_to_entrance` (dashed walking path) or
+    `parking_to_waypoint` (fades toward the waypoint); carries `color`, `line_width`,
+    and styling hints (`line_style`, `line_dasharray`, `line_opacity`, `line_fade`).
+  - **polygon** — the snapped **building** footprint (`point_type: "building"`), when available.
+</ResponseField>
+
+<ResponseField name="metadata" type="object">
+  `{ "mode": "default", "system": "EPSG:4326" }`.
+</ResponseField>
+
+<ResponseField name="view" type="object">
+  Suggested camera fitted to the geometry: `{ center: { lat, lon }, zoom, orientation,
+  position_fixed, zoomable }`. `null` when there is no geometry.
+</ResponseField>
+
+<ResponseField name="raster" type="object">
+  Present only when `raster=true` and the collection is non-empty:
+  `{ image: "data:image/png;base64,…", width, height, bbox: [minLon, minLat, maxLon, maxLat],
+  basemap }`.
+</ResponseField>
+
+<RequestExample>
+```bash Example Request
+curl --location 'https://geodata.truemetrics.cloud/V1/lastmetervisualization?identifier_entrance=16519629&identifier_parking=9005000000023123163' \
+--header 'x-api-key: YOURKEY'
+```
+</RequestExample>
+
+<ResponseExample>
+```json Response
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [12.283995, 55.646058] },
+      "properties": {
+        "object_type": "point", "point_type": "entrance",
+        "identifier": "16519629", "color": "#E63946", "marker_size": 8, "icon": "entrance"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [12.282626, 55.646017] },
+      "properties": {
+        "object_type": "point", "point_type": "parking",
+        "identifier": "9005000000023123163", "color": "#1E9ED5", "marker_size": 8, "icon": "parking"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "LineString", "coordinates": [[12.282626, 55.646017], [12.283995, 55.646058]] },
+      "properties": {
+        "object_type": "line", "line_type": "parking_to_entrance",
+        "identifier": "9005000000023123163~16519629",
+        "color": "#1E9ED5", "line_width": 3, "line_style": "dashed",
+        "line_dasharray": [2, 2], "line_opacity": 0.6
+      }
+    }
+  ],
+  "metadata": { "mode": "default", "system": "EPSG:4326" },
+  "view": {
+    "center": { "lat": 55.646038, "lon": 12.283311 },
+    "zoom": 17, "orientation": 0, "position_fixed": true, "zoomable": false
+  }
+}
+```
+</ResponseExample>
+
+### Errors
+
+<ResponseField name="400" type="object">
+  `{ "error": "Bad Request: …" }` — neither `identifier_entrance` nor `identifier_parking`
+  was supplied.
+</ResponseField>
+
+<ResponseField name="403" type="object">
+  Missing or invalid `x-api-key`.
+</ResponseField>
