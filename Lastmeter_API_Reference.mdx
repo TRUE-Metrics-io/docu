@@ -41,6 +41,17 @@ different** identifiers (many systems store the entrance and parking under separ
   when `false` the PNG has a **transparent** background so you can overlay it on your own map.
 </ParamField>
 
+<ParamField query="building" type="boolean" default="true">
+  Draw the snapped **building footprint** highlight under the entrance. **On by default** — pass
+  `building=false` to suppress it.
+</ParamField>
+
+<ParamField query="reference" type="boolean" default="false">
+  When `true`, also plot your supplied **reference location** ("taskpoint") as a small red point,
+  so you can compare the *planned* location against the *detected* entrance. Available for accounts
+  that send a reference coordinate with their metadata.
+</ParamField>
+
 ### Headers
 
 <ParamField header="x-api-key" type="string" required>
@@ -86,10 +97,10 @@ it came from, and styling hints that map directly to map layer styles.
 ### Point — entrance / parking / waypoint
 
 <ResponseField name="object_type" type="string">`"point"`</ResponseField>
-<ResponseField name="point_type" type="string">`entrance` · `parking` · `waypoint`</ResponseField>
-<ResponseField name="color" type="string">Marker colour (red for entrance, blue for parking/waypoint) → `circle-color`.</ResponseField>
-<ResponseField name="marker_size" type="number">Marker radius → `circle-radius`.</ResponseField>
-<ResponseField name="icon" type="string">Icon name for the marker.</ResponseField>
+<ResponseField name="point_type" type="string">`entrance` · `parking` · `waypoint` · `taskpoint` (your reference location, only with `reference=true`).</ResponseField>
+<ResponseField name="color" type="string">Marker colour (red for entrance, blue for parking/waypoint, red for the taskpoint) → `circle-color`.</ResponseField>
+<ResponseField name="marker_size" type="number">Marker radius → `circle-radius` (the taskpoint is a small dot).</ResponseField>
+<ResponseField name="icon" type="string">Icon name for the marker (absent for the taskpoint, which is a plain dot).</ResponseField>
 
 ### Line — walking path / waypoint leg
 

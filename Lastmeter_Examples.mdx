@@ -5,7 +5,7 @@ description: "Example calls and responses."
 
 <Info>
 The base URL and your `x-api-key` are provided by your truemetrics contact. The examples below use
-`https://api.truemetrics.cloud` and `YOUR_API_KEY` as placeholders, and `…ADDRESS_ID` placeholders
+`https://geodata.truemetrics.cloud/V1` and `YOUR_API_KEY` as placeholders, and `…ADDRESS_ID` placeholders
 for the address identifiers you send as metadata.
 </Info>
 
@@ -16,7 +16,7 @@ The most common case: one address identifier holds both the entrance and the par
 
 <RequestExample>
 ```bash Example Request
-curl --location 'https://api.truemetrics.cloud/lastmetervisualization?identifier_entrance=ADDRESS_ID&identifier_parking=ADDRESS_ID' \
+curl --location 'https://geodata.truemetrics.cloud/V1/lastmetervisualization?identifier_entrance=ADDRESS_ID&identifier_parking=ADDRESS_ID' \
 --header 'x-api-key: YOUR_API_KEY'
 ```
 </RequestExample>
@@ -76,7 +76,7 @@ are joined into one stop and connected by the dashed walking path.
 
 <RequestExample>
 ```bash Example Request
-curl --location 'https://api.truemetrics.cloud/lastmetervisualization?identifier_entrance=ENTRANCE_ADDRESS_ID&identifier_parking=PARKING_ADDRESS_ID' \
+curl --location 'https://geodata.truemetrics.cloud/V1/lastmetervisualization?identifier_entrance=ENTRANCE_ADDRESS_ID&identifier_parking=PARKING_ADDRESS_ID' \
 --header 'x-api-key: YOUR_API_KEY'
 ```
 </RequestExample>
@@ -88,7 +88,7 @@ background, so you can overlay it on your own map.
 
 <RequestExample>
 ```bash Example Request
-curl --location 'https://api.truemetrics.cloud/lastmetervisualization?identifier_entrance=ADDRESS_ID&identifier_parking=ADDRESS_ID&raster=true' \
+curl --location 'https://geodata.truemetrics.cloud/V1/lastmetervisualization?identifier_entrance=ADDRESS_ID&identifier_parking=ADDRESS_ID&raster=true' \
 --header 'x-api-key: YOUR_API_KEY'
 ```
 </RequestExample>
@@ -119,7 +119,7 @@ Add `basemap=true` to draw the geometry on a street basemap.
 
 <RequestExample>
 ```bash Example Request
-curl --location 'https://api.truemetrics.cloud/lastmetervisualization?identifier_entrance=ADDRESS_ID&identifier_parking=ADDRESS_ID&raster=true&basemap=true' \
+curl --location 'https://geodata.truemetrics.cloud/V1/lastmetervisualization?identifier_entrance=ADDRESS_ID&identifier_parking=ADDRESS_ID&raster=true&basemap=true' \
 --header 'x-api-key: YOUR_API_KEY'
 ```
 </RequestExample>
@@ -132,8 +132,39 @@ The `raster.image` value is a base64 data-URI. To save it as a PNG:
 
 ```bash Save the PNG
 curl -s --header 'x-api-key: YOUR_API_KEY' \
-  'https://api.truemetrics.cloud/lastmetervisualization?identifier_entrance=ADDRESS_ID&identifier_parking=ADDRESS_ID&raster=true&basemap=true' \
+  'https://geodata.truemetrics.cloud/V1/lastmetervisualization?identifier_entrance=ADDRESS_ID&identifier_parking=ADDRESS_ID&raster=true&basemap=true' \
 | python -c "import sys,json,base64; d=json.load(sys.stdin); open('lastmeter.png','wb').write(base64.b64decode(d['raster']['image'].split(',',1)[1]))"
+```
+
+## 6. Toggling the building highlight and the reference point
+
+The building footprint is drawn **by default**. Pass `building=false` to suppress it:
+
+<RequestExample>
+```bash Without the building highlight
+curl --location 'https://geodata.truemetrics.cloud/V1/lastmetervisualization?identifier_entrance=ADDRESS_ID&identifier_parking=ADDRESS_ID&building=false' \
+--header 'x-api-key: YOUR_API_KEY'
+```
+</RequestExample>
+
+If your account sends a **reference location** with its metadata, add `reference=true` to also plot
+it as a small red **taskpoint** — handy for comparing the planned location against the detected
+entrance:
+
+<RequestExample>
+```bash With the reference point
+curl --location 'https://geodata.truemetrics.cloud/V1/lastmetervisualization?identifier_entrance=ADDRESS_ID&identifier_parking=ADDRESS_ID&reference=true' \
+--header 'x-api-key: YOUR_API_KEY'
+```
+</RequestExample>
+
+```json The extra feature
+{
+  "type": "Feature",
+  "geometry": { "type": "Point", "coordinates": [18.838450, 50.251560] },
+  "properties": { "object_type": "point", "point_type": "taskpoint", "identifier": "ADDRESS_ID",
+                  "color": "#E63946", "marker_size": 4 }
+}
 ```
 
 <Info>
