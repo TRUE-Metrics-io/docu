@@ -1,0 +1,121 @@
+---
+title: "API Reference"
+description: "Endpoint, parameters and response contract."
+---
+
+## Endpoint
+
+```
+GET /lastmetervisualization
+```
+
+Returns a GeoJSON `FeatureCollection` for the requested address `identifier`(s), optionally with a
+rendered PNG.
+
+## Request
+
+### Query parameters
+
+<ParamField query="identifier" type="string" required>
+  One or more address identifiers as a **comma-separated** list (the `id_address` / merge id you
+  send as metadata). Duplicates are ignored and order does not matter. Up to **100** identifiers
+  per request, each at most **256** characters.
+</ParamField>
+
+<ParamField query="raster" type="boolean" default="false">
+  When `true`, the response also contains a rendered **PNG image** of the geometry in a `raster`
+  block. Accepted truthy values: `true`, `1`, `yes`, `on`.
+</ParamField>
+
+<ParamField query="basemap" type="boolean" default="false">
+  Only relevant together with `raster=true`. When `true`, the PNG is drawn on a **street basemap**;
+  when `false` the PNG has a **transparent** background so you can overlay it on your own map.
+</ParamField>
+
+### Headers
+
+<ParamField header="x-api-key" type="string" required>
+  Your API key. Identifies your account; you only receive your own data.
+</ParamField>
+
+## Response
+
+A standard GeoJSON `FeatureCollection` with two extra top-level blocks, `metadata` and `view`
+(and `raster` when requested).
+
+<ResponseField name="type" type="string">
+  Always `"FeatureCollection"`.
+</ResponseField>
+
+<ResponseField name="features" type="array">
+  The map features — see [Feature types](#feature-types) below. May be **empty** when none of the
+  requested identifiers have data yet (this is a normal `200`, not an error).
+</ResponseField>
+
+<ResponseField name="metadata" type="object">
+  `{ "mode": "default", "system": "EPSG:4326" }` — the coordinate reference system of all
+  geometry.
+</ResponseField>
+
+<ResponseField name="view" type="object | null">
+  A suggested camera fitted to all points: `{ center: { lat, lon }, zoom, orientation,
+  position_fixed, zoomable }`. `null` when the collection is empty.
+</ResponseField>
+
+<ResponseField name="raster" type="object">
+  Present only when `raster=true` and the collection is non-empty:
+  `{ image, width, height, bbox, basemap }`, where `image` is a `data:image/png;base64,…`
+  data-URI, `bbox` is `[minLon, minLat, maxLon, maxLat]`, and `basemap` indicates whether a street
+  basemap was drawn.
+</ResponseField>
+
+## Feature types
+
+Every feature carries `properties.object_type` (`point` | `line` | `polygon`), an `identifier`,
+and styling hints that map directly to map layer styles.
+
+### Point — entrance / parking / waypoint
+
+<ResponseField name="object_type" type="string">`"point"`</ResponseField>
+<ResponseField name="point_type" type="string">`entrance` · `parking` · `waypoint`</ResponseField>
+<ResponseField name="color" type="string">Marker colour (e.g. red for entrance, blue for parking/waypoint) → `circle-color`.</ResponseField>
+<ResponseField name="marker_size" type="number">Marker radius → `circle-radius`.</ResponseField>
+<ResponseField name="icon" type="string">Icon name for the marker.</ResponseField>
+
+### Line — walking path / waypoint leg
+
+<ResponseField name="object_type" type="string">`"line"`</ResponseField>
+<ResponseField name="line_type" type="string">`parking_to_entrance` (the dashed walking path) · `parking_to_waypoint`.</ResponseField>
+<ResponseField name="color" type="string">Line colour → `line-color`.</ResponseField>
+<ResponseField name="line_width" type="number">Line width → `line-width`.</ResponseField>
+<ResponseField name="line_style" type="string">`"dashed"` for the walking path; combine with `line_dasharray` (e.g. `[2,2]`).</ResponseField>
+<ResponseField name="line_opacity" type="number">Opacity of the walking path (e.g. `0.6`) → `line-opacity`.</ResponseField>
+<ResponseField name="line_fade / fade_start" type="string / number">`parking_to_waypoint` fades out toward the waypoint; render with a `line-gradient` that goes transparent after `fade_start` (e.g. `0.7`).</ResponseField>
+
+### Polygon — building footprint
+
+<ResponseField name="object_type" type="string">`"polygon"`</ResponseField>
+<ResponseField name="point_type" type="string">`"building"`</ResponseField>
+<ResponseField name="color" type="string">Fill / outline colour.</ResponseField>
+<ResponseField name="fill_opacity" type="number">Fill opacity (e.g. `0.2`) → `fill-opacity`.</ResponseField>
+<ResponseField name="line_width" type="number">Outline width.</ResponseField>
+
+<Info>
+Connectors are drawn to the **nearest** parking, so an entrance and parking that you sent under
+**different** identifiers are still connected, while several distinct stops each connect to their
+own closest parking.
+</Info>
+
+## Status codes
+
+| Status | Meaning |
+| --- | --- |
+| `200` | Success. A `200` with an empty `features` array means no data exists yet for those identifiers. |
+| `400` | Missing `identifier`, an identifier that is too long, or more than 100 identifiers. |
+| `403` | Missing or invalid `x-api-key`. |
+
+## Caching & limits
+
+* Successful, non-empty responses are cacheable (`Cache-Control: public, max-age=3600`).
+* CORS is open (`Access-Control-Allow-Origin: *`) so the endpoint can be called from the browser.
+* Rate limit: **100 requests/second**.

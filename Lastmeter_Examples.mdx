@@ -1,0 +1,129 @@
+---
+title: "Examples"
+description: "Example calls and responses."
+---
+
+<Info>
+The base URL and your `x-api-key` are provided by your truemetrics contact. The examples below use
+`https://api.truemetrics.cloud` and `YOUR_API_KEY` as placeholders.
+</Info>
+
+## 1. GeoJSON only
+
+Request the vector geometry for a single address.
+
+<RequestExample>
+```bash Example Request
+curl --location 'https://api.truemetrics.cloud/lastmetervisualization?identifier=example_address' \
+--header 'x-api-key: YOUR_API_KEY'
+```
+</RequestExample>
+
+<ResponseExample>
+```json Response
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": { "type": "Polygon", "coordinates": [[[13.40484,52.51713],[13.40516,52.51713],[13.40516,52.51731],[13.40484,52.51731],[13.40484,52.51713]]] },
+      "properties": { "object_type": "polygon", "point_type": "building", "identifier": "example_address",
+                      "color": "#1E9ED5", "fill_opacity": 0.2, "line_width": 2 }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [13.40500, 52.51722] },
+      "properties": { "object_type": "point", "point_type": "entrance", "identifier": "example_address",
+                      "color": "#E63946", "marker_size": 8, "icon": "entrance" }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [13.40566, 52.51690] },
+      "properties": { "object_type": "point", "point_type": "parking", "identifier": "example_address",
+                      "color": "#1E9ED5", "marker_size": 8, "icon": "parking" }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "LineString", "coordinates": [[13.40566,52.51690],[13.40500,52.51722]] },
+      "properties": { "object_type": "line", "line_type": "parking_to_entrance", "identifier": "example_address",
+                      "color": "#1E9ED5", "line_width": 3, "line_style": "dashed", "line_dasharray": [2,2], "line_opacity": 0.6 }
+    }
+  ],
+  "metadata": { "mode": "default", "system": "EPSG:4326" },
+  "view": { "center": { "lat": 52.51706, "lon": 13.40525 }, "zoom": 18,
+            "orientation": 0, "position_fixed": true, "zoomable": false }
+}
+```
+</ResponseExample>
+
+## 2. Several addresses at once
+
+Pass a comma-separated list. Each address is rendered into the same collection, and the camera
+(`view`) is fitted around all of them.
+
+<RequestExample>
+```bash Example Request
+curl --location 'https://api.truemetrics.cloud/lastmetervisualization?identifier=address_a,address_b,address_c' \
+--header 'x-api-key: YOUR_API_KEY'
+```
+</RequestExample>
+
+## 3. Rendered image — transparent
+
+Add `raster=true` to also receive a PNG. With no basemap the image has a **transparent**
+background, so you can overlay it directly on your own map.
+
+<RequestExample>
+```bash Example Request
+curl --location 'https://api.truemetrics.cloud/lastmetervisualization?identifier=example_address&raster=true' \
+--header 'x-api-key: YOUR_API_KEY'
+```
+</RequestExample>
+
+<ResponseExample>
+```json Response (truncated)
+{
+  "type": "FeatureCollection",
+  "features": [ /* … same as example 1 … */ ],
+  "metadata": { "mode": "default", "system": "EPSG:4326" },
+  "view": { "center": { "lat": 52.51706, "lon": 13.40525 }, "zoom": 18, "orientation": 0, "position_fixed": true, "zoomable": false },
+  "raster": {
+    "image": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA…",
+    "width": 640,
+    "height": 480,
+    "bbox": [13.40484, 52.51690, 13.40566, 52.51731],
+    "basemap": false
+  }
+}
+```
+</ResponseExample>
+
+<img height="260" noZoom src="/images/lastmeter_transparent.png" />
+
+## 4. Rendered image — on a street basemap
+
+Add `basemap=true` to draw the geometry on a street basemap.
+
+<RequestExample>
+```bash Example Request
+curl --location 'https://api.truemetrics.cloud/lastmetervisualization?identifier=example_address&raster=true&basemap=true' \
+--header 'x-api-key: YOUR_API_KEY'
+```
+</RequestExample>
+
+<img height="260" noZoom src="/images/lastmeter_basemap.png" />
+
+## 5. Turning the image into a file
+
+The `raster.image` value is a base64 data-URI. To save it as a PNG:
+
+```bash Save the PNG
+curl -s --header 'x-api-key: YOUR_API_KEY' \
+  'https://api.truemetrics.cloud/lastmetervisualization?identifier=example_address&raster=true&basemap=true' \
+| python -c "import sys,json,base64; d=json.load(sys.stdin); open('lastmeter.png','wb').write(base64.b64decode(d['raster']['image'].split(',',1)[1]))"
+```
+
+<Info>
+If an address has no data yet, the call still returns `200` with an empty `features` array (and no
+`raster`). This is expected — the geometry appears as soon as the address has been processed.
+</Info>
