@@ -1,6 +1,6 @@
 ---
-title: "Examples"
-description: "Example calls and responses."
+title: 'Examples'
+description: 'Example calls and responses.'
 ---
 
 <Info>
@@ -166,6 +166,11 @@ curl --location 'https://geodata.truemetrics.cloud/V1/lastmetervisualization?ide
                   "color": "#E63946", "marker_size": 4 }
 }
 ```
+
+The reference point appears as a small red dot next to the detected entrance — here the planned
+location sits a few metres from the entrance that was actually used:
+
+<img height="260" noZoom src="/images/lastmeter_reference.png" />
 
 <Info>
 If the stop has no data yet, the call still returns `200` with an empty `features` array (and no
