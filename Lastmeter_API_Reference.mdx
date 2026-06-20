@@ -47,6 +47,13 @@ different** identifiers (many systems store the entrance and parking under separ
   `building=false` to suppress it.
 </ParamField>
 
+<ParamField query="geojson" type="boolean" default="false">
+  Include the GeoJSON `features` array in the response. **Off by default** — pass `geojson=true`
+  to receive the vector geometry. The `type` / `metadata` / `view` envelope (and the `raster`
+  block, when requested) is always returned, so if you only need the rendered image you can request
+  `raster=true` alone and keep the payload small.
+</ParamField>
+
 <ParamField query="reference" type="boolean" default="false">
   When `true`, also plot your supplied **reference location** ("taskpoint") as a small red point,
   so you can compare the *planned* location against the *detected* entrance. Available for accounts
@@ -69,8 +76,9 @@ A standard GeoJSON `FeatureCollection` with two extra top-level blocks, `metadat
 </ResponseField>
 
 <ResponseField name="features" type="array">
-  The map features — see [Feature types](#feature-types) below. May be **empty** when the stop has
-  no data yet (this is a normal `200`, not an error).
+  The map features — see [Feature types](#feature-types) below. Returned **only when
+  `geojson=true`** (off by default); otherwise it is an empty array. Even with `geojson=true` it
+  may be empty when the stop has no data yet (a normal `200`, not an error).
 </ResponseField>
 
 <ResponseField name="metadata" type="object">
@@ -137,7 +145,7 @@ walking path connects them and, when available, the entrance's building is highl
 
 | Status | Meaning |
 | --- | --- |
-| `200` | Success. A `200` with an empty `features` array means the stop has no data yet. |
+| `200` | Success. `features` is empty unless `geojson=true`; with `geojson=true`, an empty `features` array means the stop has no data yet. |
 | `400` | Neither `identifier_entrance` nor `identifier_parking` was provided. |
 | `403` | Missing or invalid `x-api-key`. |
 
