@@ -1,15 +1,16 @@
 ---
-title: "API Reference"
-description: "Endpoint, parameters and response contract."
+title: 'API Reference'
+description: 'Endpoint, parameters and response contract.'
 ---
 
 ## Endpoint
 
 ```
-GET /lastmetervisualization
+GET https://geodata.truemetrics.cloud/V1/lastmetervisualization
 ```
 
 Returns a GeoJSON `FeatureCollection` for **one delivery stop**, optionally with a rendered PNG.
+The base URL is provided by your truemetrics contact.
 
 ## Request
 
@@ -96,29 +97,35 @@ it came from, and styling hints that map directly to map layer styles.
 
 ### Point — entrance / parking / waypoint
 
-<ResponseField name="object_type" type="string">`"point"`</ResponseField>
-<ResponseField name="point_type" type="string">`entrance` · `parking` · `waypoint` · `taskpoint` (your reference location, only with `reference=true`).</ResponseField>
-<ResponseField name="color" type="string">Marker colour (red for entrance, blue for parking/waypoint, red for the taskpoint) → `circle-color`.</ResponseField>
-<ResponseField name="marker_size" type="number">Marker radius → `circle-radius` (the taskpoint is a small dot).</ResponseField>
-<ResponseField name="icon" type="string">Icon name for the marker (absent for the taskpoint, which is a plain dot).</ResponseField>
+| Property | Type | Description |
+| --- | --- | --- |
+| `object_type` | string | `"point"` |
+| `point_type` | string | `entrance` · `parking` · `waypoint` · `taskpoint` (your reference location, only with `reference=true`) |
+| `color` | string | Marker colour (red entrance, blue parking/waypoint, red taskpoint) → `circle-color` |
+| `marker_size` | number | Marker radius → `circle-radius` (the taskpoint is a small dot) |
+| `icon` | string | Icon name for the marker (absent for the taskpoint, which is a plain dot) |
 
 ### Line — walking path / waypoint leg
 
-<ResponseField name="object_type" type="string">`"line"`</ResponseField>
-<ResponseField name="line_type" type="string">`parking_to_entrance` (the dashed walking path) · `parking_to_waypoint`.</ResponseField>
-<ResponseField name="color" type="string">Line colour → `line-color`.</ResponseField>
-<ResponseField name="line_width" type="number">Line width → `line-width`.</ResponseField>
-<ResponseField name="line_style" type="string">`"dashed"` for the walking path; combine with `line_dasharray` (e.g. `[2,2]`).</ResponseField>
-<ResponseField name="line_opacity" type="number">Opacity of the walking path (e.g. `0.6`) → `line-opacity`.</ResponseField>
-<ResponseField name="line_fade / fade_start" type="string / number">`parking_to_waypoint` fades out toward the waypoint; render with a `line-gradient` that goes transparent after `fade_start` (e.g. `0.7`).</ResponseField>
+| Property | Type | Description |
+| --- | --- | --- |
+| `object_type` | string | `"line"` |
+| `line_type` | string | `parking_to_entrance` (the dashed walking path) · `parking_to_waypoint` |
+| `color` | string | Line colour → `line-color` |
+| `line_width` | number | Line width → `line-width` |
+| `line_style` | string | `"dashed"` for the walking path; combine with `line_dasharray` (e.g. `[2,2]`) |
+| `line_opacity` | number | Opacity of the walking path (e.g. `0.6`) → `line-opacity` |
+| `line_fade` / `fade_start` | string / number | `parking_to_waypoint` fades toward the waypoint after `fade_start` (e.g. `0.7`) — render with a `line-gradient` |
 
 ### Polygon — building footprint
 
-<ResponseField name="object_type" type="string">`"polygon"`</ResponseField>
-<ResponseField name="point_type" type="string">`"building"`</ResponseField>
-<ResponseField name="color" type="string">Fill / outline colour.</ResponseField>
-<ResponseField name="fill_opacity" type="number">Fill opacity (e.g. `0.2`) → `fill-opacity`.</ResponseField>
-<ResponseField name="line_width" type="number">Outline width.</ResponseField>
+| Property | Type | Description |
+| --- | --- | --- |
+| `object_type` | string | `"polygon"` |
+| `point_type` | string | `"building"` |
+| `color` | string | Fill / outline colour |
+| `fill_opacity` | number | Fill opacity (e.g. `0.2`) → `fill-opacity` |
+| `line_width` | number | Outline width |
 
 <Info>
 The entrance and parking can come from **different** identifiers. Pass each to its own parameter
