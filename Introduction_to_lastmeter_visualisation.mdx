@@ -1,0 +1,50 @@
+---
+title: "Introduction"
+description: "A ready-to-render map view of the last meters of a delivery."
+---
+
+The **Last Meter Visualisation** API returns, for one or more of your delivery addresses, a
+ready-to-render picture of the *last meters* of the delivery: where the driver **parked**, the
+**entrance** that was used, the **walking path** between them, an optional intermediate
+**waypoint**, and the **building** the entrance belongs to.
+
+You request it for a single delivery stop — by giving the **entrance** and **parking** address
+identifiers (they may be the same id, or two different ids) — and get back:
+
+* a **GeoJSON `FeatureCollection`** you can drop straight onto a [MapLibre](https://maplibre.org/)
+  or [Mapbox](https://www.mapbox.com/) map — the styling hints (colours, line widths, dashes) map
+  1:1 to map layer styles, and
+* optionally a **rendered PNG image** (`raster`), so you can show a thumbnail without running a
+  map renderer yourself — either transparent (to overlay on your own map) or on a street basemap.
+
+<img height="260" noZoom src="/images/lastmeter_basemap.png" />
+
+## When to use it
+
+* Plot the last-meter geometry of a delivery in your own dashboard or driver app.
+* Embed a small map thumbnail of a stop in an email, report or ticket.
+* Give dispatchers a quick visual of *where exactly* a parcel was delivered.
+
+## What you get
+
+| Element | Description |
+| --- | --- |
+| **Entrance** | The detected door / delivery point for the address. |
+| **Parking** | Where the driver parked the vehicle. |
+| **Waypoint** | An optional point along the walking route. |
+| **Walking path** | A dashed line from parking to entrance. |
+| **Building** | The building footprint the entrance belongs to (when available). |
+
+All coordinates are returned in **EPSG:4326** (WGS84 longitude/latitude).
+
+## Authentication
+
+Every request is authenticated with your **`x-api-key`**. The key identifies your account, so you
+only ever receive your own data — there is no account or customer parameter in the request. Your
+key and the base URL are provided by your truemetrics contact.
+
+<Info>
+The identifiers you pass are the same address identifiers you send to truemetrics as metadata
+(your `id_address` / merge id). The entrance and parking may use **different** identifiers — pass
+each to its own parameter (`identifier_entrance` / `identifier_parking`).
+</Info>

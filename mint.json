@@ -48,6 +48,14 @@
         "Architecture_of_Export",
         "Update_and_Versioning"
       ]
+    },
+    {
+      "group": "Last Meter Visualisation",
+      "pages": [
+        "Introduction_to_lastmeter_visualisation",
+        "Lastmeter_API_Reference",
+        "Lastmeter_Examples"
+      ]
     }
   ],
   "footerSocials": {

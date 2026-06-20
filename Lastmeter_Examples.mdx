@@ -1,0 +1,173 @@
+---
+title: "Examples"
+description: "Example calls and responses."
+---
+
+<Info>
+The base URL and your `x-api-key` are provided by your truemetrics contact. The examples below use
+`https://geodata.truemetrics.cloud/V1` and `YOUR_API_KEY` as placeholders, and `…ADDRESS_ID` placeholders
+for the address identifiers you send as metadata.
+</Info>
+
+## 1. A stop where entrance and parking share one identifier
+
+The most common case: one address identifier holds both the entrance and the parking. Pass it to
+**both** parameters.
+
+<RequestExample>
+```bash Example Request
+curl --location 'https://geodata.truemetrics.cloud/V1/lastmetervisualization?identifier_entrance=ADDRESS_ID&identifier_parking=ADDRESS_ID' \
+--header 'x-api-key: YOUR_API_KEY'
+```
+</RequestExample>
+
+<ResponseExample>
+```json Response
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [18.838413, 50.251602] },
+      "properties": { "object_type": "point", "point_type": "entrance", "identifier": "ADDRESS_ID",
+                      "color": "#E63946", "marker_size": 8, "icon": "entrance" }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [18.838083, 50.251618] },
+      "properties": { "object_type": "point", "point_type": "parking", "identifier": "ADDRESS_ID",
+                      "color": "#1E9ED5", "marker_size": 8, "icon": "parking" }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [18.837992, 50.251594] },
+      "properties": { "object_type": "point", "point_type": "waypoint", "identifier": "ADDRESS_ID",
+                      "color": "#1E9ED5", "marker_size": 6, "icon": "waypoint" }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "LineString", "coordinates": [[18.838083,50.251618],[18.838413,50.251602]] },
+      "properties": { "object_type": "line", "line_type": "parking_to_entrance", "identifier": "ADDRESS_ID",
+                      "color": "#1E9ED5", "line_width": 3, "line_style": "dashed", "line_dasharray": [2,2], "line_opacity": 0.6 }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "LineString", "coordinates": [[18.838083,50.251618],[18.837992,50.251594]] },
+      "properties": { "object_type": "line", "line_type": "parking_to_waypoint", "identifier": "ADDRESS_ID",
+                      "color": "#1E9ED5", "line_width": 3, "line_fade": "to_end", "fade_start": 0.7 }
+    }
+  ],
+  "metadata": { "mode": "default", "system": "EPSG:4326" },
+  "view": { "center": { "lat": 50.251606, "lon": 18.838203 }, "zoom": 18,
+            "orientation": 0, "position_fixed": true, "zoomable": false }
+}
+```
+</ResponseExample>
+
+<Info>
+When the entrance is matched to a building, a `polygon` feature (`point_type: "building"`) is also
+included and drawn beneath the markers.
+</Info>
+
+## 2. Entrance and parking under different identifiers
+
+If your entrance and parking live under separate address ids, pass each to its own parameter — they
+are joined into one stop and connected by the dashed walking path.
+
+<RequestExample>
+```bash Example Request
+curl --location 'https://geodata.truemetrics.cloud/V1/lastmetervisualization?identifier_entrance=ENTRANCE_ADDRESS_ID&identifier_parking=PARKING_ADDRESS_ID' \
+--header 'x-api-key: YOUR_API_KEY'
+```
+</RequestExample>
+
+## 3. Rendered image — transparent
+
+Add `raster=true` to also receive a PNG. With no basemap the image has a **transparent**
+background, so you can overlay it on your own map.
+
+<RequestExample>
+```bash Example Request
+curl --location 'https://geodata.truemetrics.cloud/V1/lastmetervisualization?identifier_entrance=ADDRESS_ID&identifier_parking=ADDRESS_ID&raster=true' \
+--header 'x-api-key: YOUR_API_KEY'
+```
+</RequestExample>
+
+<ResponseExample>
+```json Response (truncated)
+{
+  "type": "FeatureCollection",
+  "features": [ /* … same as example 1 … */ ],
+  "metadata": { "mode": "default", "system": "EPSG:4326" },
+  "view": { "center": { "lat": 50.251606, "lon": 18.838203 }, "zoom": 18, "orientation": 0, "position_fixed": true, "zoomable": false },
+  "raster": {
+    "image": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA…",
+    "width": 640,
+    "height": 480,
+    "bbox": [18.837992, 50.251594, 18.838413, 50.251618],
+    "basemap": false
+  }
+}
+```
+</ResponseExample>
+
+<img height="260" noZoom src="/images/lastmeter_transparent.png" />
+
+## 4. Rendered image — on a street basemap
+
+Add `basemap=true` to draw the geometry on a street basemap.
+
+<RequestExample>
+```bash Example Request
+curl --location 'https://geodata.truemetrics.cloud/V1/lastmetervisualization?identifier_entrance=ADDRESS_ID&identifier_parking=ADDRESS_ID&raster=true&basemap=true' \
+--header 'x-api-key: YOUR_API_KEY'
+```
+</RequestExample>
+
+<img height="260" noZoom src="/images/lastmeter_basemap.png" />
+
+## 5. Turning the image into a file
+
+The `raster.image` value is a base64 data-URI. To save it as a PNG:
+
+```bash Save the PNG
+curl -s --header 'x-api-key: YOUR_API_KEY' \
+  'https://geodata.truemetrics.cloud/V1/lastmetervisualization?identifier_entrance=ADDRESS_ID&identifier_parking=ADDRESS_ID&raster=true&basemap=true' \
+| python -c "import sys,json,base64; d=json.load(sys.stdin); open('lastmeter.png','wb').write(base64.b64decode(d['raster']['image'].split(',',1)[1]))"
+```
+
+## 6. Toggling the building highlight and the reference point
+
+The building footprint is drawn **by default**. Pass `building=false` to suppress it:
+
+<RequestExample>
+```bash Without the building highlight
+curl --location 'https://geodata.truemetrics.cloud/V1/lastmetervisualization?identifier_entrance=ADDRESS_ID&identifier_parking=ADDRESS_ID&building=false' \
+--header 'x-api-key: YOUR_API_KEY'
+```
+</RequestExample>
+
+If your account sends a **reference location** with its metadata, add `reference=true` to also plot
+it as a small red **taskpoint** — handy for comparing the planned location against the detected
+entrance:
+
+<RequestExample>
+```bash With the reference point
+curl --location 'https://geodata.truemetrics.cloud/V1/lastmetervisualization?identifier_entrance=ADDRESS_ID&identifier_parking=ADDRESS_ID&reference=true' \
+--header 'x-api-key: YOUR_API_KEY'
+```
+</RequestExample>
+
+```json The extra feature
+{
+  "type": "Feature",
+  "geometry": { "type": "Point", "coordinates": [18.838450, 50.251560] },
+  "properties": { "object_type": "point", "point_type": "taskpoint", "identifier": "ADDRESS_ID",
+                  "color": "#E63946", "marker_size": 4 }
+}
+```
+
+<Info>
+If the stop has no data yet, the call still returns `200` with an empty `features` array (and no
+`raster`). This is expected — the geometry appears as soon as the stop has been processed.
+</Info>

@@ -1,0 +1,141 @@
+---
+title: "API Reference"
+description: "Endpoint, parameters and response contract."
+---
+
+## Endpoint
+
+```
+GET /lastmetervisualization
+```
+
+Returns a GeoJSON `FeatureCollection` for **one delivery stop**, optionally with a rendered PNG.
+
+## Request
+
+### Query parameters
+
+A request describes a single stop, addressed by up to two address identifiers — the **entrance**
+and the **parking**. They may be the **same** identifier (one address that has both) or **two
+different** identifiers (many systems store the entrance and parking under separate address ids).
+**At least one** of them must be provided.
+
+<ParamField query="identifier_entrance" type="string">
+  The address identifier (the `id_address` / merge id you send as metadata) used to look up the
+  **entrance** — and its **building** footprint. Optional, but at least one of
+  `identifier_entrance` / `identifier_parking` is required.
+</ParamField>
+
+<ParamField query="identifier_parking" type="string">
+  The address identifier used to look up the **parking** and the **waypoint** (these two share the
+  same id). Optional, but at least one of `identifier_entrance` / `identifier_parking` is required.
+</ParamField>
+
+<ParamField query="raster" type="boolean" default="false">
+  When `true`, the response also contains a rendered **PNG image** of the geometry in a `raster`
+  block. Accepted truthy values: `true`, `1`, `yes`, `on`.
+</ParamField>
+
+<ParamField query="basemap" type="boolean" default="false">
+  Only relevant together with `raster=true`. When `true`, the PNG is drawn on a **street basemap**;
+  when `false` the PNG has a **transparent** background so you can overlay it on your own map.
+</ParamField>
+
+<ParamField query="building" type="boolean" default="true">
+  Draw the snapped **building footprint** highlight under the entrance. **On by default** — pass
+  `building=false` to suppress it.
+</ParamField>
+
+<ParamField query="reference" type="boolean" default="false">
+  When `true`, also plot your supplied **reference location** ("taskpoint") as a small red point,
+  so you can compare the *planned* location against the *detected* entrance. Available for accounts
+  that send a reference coordinate with their metadata.
+</ParamField>
+
+### Headers
+
+<ParamField header="x-api-key" type="string" required>
+  Your API key. Identifies your account; you only receive your own data.
+</ParamField>
+
+## Response
+
+A standard GeoJSON `FeatureCollection` with two extra top-level blocks, `metadata` and `view`
+(and `raster` when requested).
+
+<ResponseField name="type" type="string">
+  Always `"FeatureCollection"`.
+</ResponseField>
+
+<ResponseField name="features" type="array">
+  The map features — see [Feature types](#feature-types) below. May be **empty** when the stop has
+  no data yet (this is a normal `200`, not an error).
+</ResponseField>
+
+<ResponseField name="metadata" type="object">
+  `{ "mode": "default", "system": "EPSG:4326" }` — the coordinate reference system of all
+  geometry.
+</ResponseField>
+
+<ResponseField name="view" type="object | null">
+  A suggested camera fitted to all points: `{ center: { lat, lon }, zoom, orientation,
+  position_fixed, zoomable }`. `null` when the collection is empty.
+</ResponseField>
+
+<ResponseField name="raster" type="object">
+  Present only when `raster=true` and the collection is non-empty:
+  `{ image, width, height, bbox, basemap }`, where `image` is a `data:image/png;base64,…`
+  data-URI, `bbox` is `[minLon, minLat, maxLon, maxLat]`, and `basemap` indicates whether a street
+  basemap was drawn.
+</ResponseField>
+
+## Feature types
+
+Every feature carries `properties.object_type` (`point` | `line` | `polygon`), the `identifier`
+it came from, and styling hints that map directly to map layer styles.
+
+### Point — entrance / parking / waypoint
+
+<ResponseField name="object_type" type="string">`"point"`</ResponseField>
+<ResponseField name="point_type" type="string">`entrance` · `parking` · `waypoint` · `taskpoint` (your reference location, only with `reference=true`).</ResponseField>
+<ResponseField name="color" type="string">Marker colour (red for entrance, blue for parking/waypoint, red for the taskpoint) → `circle-color`.</ResponseField>
+<ResponseField name="marker_size" type="number">Marker radius → `circle-radius` (the taskpoint is a small dot).</ResponseField>
+<ResponseField name="icon" type="string">Icon name for the marker (absent for the taskpoint, which is a plain dot).</ResponseField>
+
+### Line — walking path / waypoint leg
+
+<ResponseField name="object_type" type="string">`"line"`</ResponseField>
+<ResponseField name="line_type" type="string">`parking_to_entrance` (the dashed walking path) · `parking_to_waypoint`.</ResponseField>
+<ResponseField name="color" type="string">Line colour → `line-color`.</ResponseField>
+<ResponseField name="line_width" type="number">Line width → `line-width`.</ResponseField>
+<ResponseField name="line_style" type="string">`"dashed"` for the walking path; combine with `line_dasharray` (e.g. `[2,2]`).</ResponseField>
+<ResponseField name="line_opacity" type="number">Opacity of the walking path (e.g. `0.6`) → `line-opacity`.</ResponseField>
+<ResponseField name="line_fade / fade_start" type="string / number">`parking_to_waypoint` fades out toward the waypoint; render with a `line-gradient` that goes transparent after `fade_start` (e.g. `0.7`).</ResponseField>
+
+### Polygon — building footprint
+
+<ResponseField name="object_type" type="string">`"polygon"`</ResponseField>
+<ResponseField name="point_type" type="string">`"building"`</ResponseField>
+<ResponseField name="color" type="string">Fill / outline colour.</ResponseField>
+<ResponseField name="fill_opacity" type="number">Fill opacity (e.g. `0.2`) → `fill-opacity`.</ResponseField>
+<ResponseField name="line_width" type="number">Outline width.</ResponseField>
+
+<Info>
+The entrance and parking can come from **different** identifiers. Pass each to its own parameter
+(`identifier_entrance` / `identifier_parking`) and they are joined into one stop — the dashed
+walking path connects them and, when available, the entrance's building is highlighted.
+</Info>
+
+## Status codes
+
+| Status | Meaning |
+| --- | --- |
+| `200` | Success. A `200` with an empty `features` array means the stop has no data yet. |
+| `400` | Neither `identifier_entrance` nor `identifier_parking` was provided. |
+| `403` | Missing or invalid `x-api-key`. |
+
+## Caching & limits
+
+* Successful, non-empty responses are cacheable (`Cache-Control: public, max-age=3600`).
+* CORS is open (`Access-Control-Allow-Origin: *`) so the endpoint can be called from the browser.
+* Rate limit: **100 requests/second**.
