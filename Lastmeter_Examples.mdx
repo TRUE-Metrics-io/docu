@@ -5,16 +5,18 @@ description: "Example calls and responses."
 
 <Info>
 The base URL and your `x-api-key` are provided by your truemetrics contact. The examples below use
-`https://api.truemetrics.cloud` and `YOUR_API_KEY` as placeholders.
+`https://api.truemetrics.cloud` and `YOUR_API_KEY` as placeholders, and `…ADDRESS_ID` placeholders
+for the address identifiers you send as metadata.
 </Info>
 
-## 1. GeoJSON only
+## 1. A stop where entrance and parking share one identifier
 
-Request the vector geometry for a single address.
+The most common case: one address identifier holds both the entrance and the parking. Pass it to
+**both** parameters.
 
 <RequestExample>
 ```bash Example Request
-curl --location 'https://api.truemetrics.cloud/lastmetervisualization?identifier=example_address' \
+curl --location 'https://api.truemetrics.cloud/lastmetervisualization?identifier_entrance=ADDRESS_ID&identifier_parking=ADDRESS_ID' \
 --header 'x-api-key: YOUR_API_KEY'
 ```
 </RequestExample>
@@ -26,44 +28,55 @@ curl --location 'https://api.truemetrics.cloud/lastmetervisualization?identifier
   "features": [
     {
       "type": "Feature",
-      "geometry": { "type": "Polygon", "coordinates": [[[13.40484,52.51713],[13.40516,52.51713],[13.40516,52.51731],[13.40484,52.51731],[13.40484,52.51713]]] },
-      "properties": { "object_type": "polygon", "point_type": "building", "identifier": "example_address",
-                      "color": "#1E9ED5", "fill_opacity": 0.2, "line_width": 2 }
-    },
-    {
-      "type": "Feature",
-      "geometry": { "type": "Point", "coordinates": [13.40500, 52.51722] },
-      "properties": { "object_type": "point", "point_type": "entrance", "identifier": "example_address",
+      "geometry": { "type": "Point", "coordinates": [18.838413, 50.251602] },
+      "properties": { "object_type": "point", "point_type": "entrance", "identifier": "ADDRESS_ID",
                       "color": "#E63946", "marker_size": 8, "icon": "entrance" }
     },
     {
       "type": "Feature",
-      "geometry": { "type": "Point", "coordinates": [13.40566, 52.51690] },
-      "properties": { "object_type": "point", "point_type": "parking", "identifier": "example_address",
+      "geometry": { "type": "Point", "coordinates": [18.838083, 50.251618] },
+      "properties": { "object_type": "point", "point_type": "parking", "identifier": "ADDRESS_ID",
                       "color": "#1E9ED5", "marker_size": 8, "icon": "parking" }
     },
     {
       "type": "Feature",
-      "geometry": { "type": "LineString", "coordinates": [[13.40566,52.51690],[13.40500,52.51722]] },
-      "properties": { "object_type": "line", "line_type": "parking_to_entrance", "identifier": "example_address",
+      "geometry": { "type": "Point", "coordinates": [18.837992, 50.251594] },
+      "properties": { "object_type": "point", "point_type": "waypoint", "identifier": "ADDRESS_ID",
+                      "color": "#1E9ED5", "marker_size": 6, "icon": "waypoint" }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "LineString", "coordinates": [[18.838083,50.251618],[18.838413,50.251602]] },
+      "properties": { "object_type": "line", "line_type": "parking_to_entrance", "identifier": "ADDRESS_ID",
                       "color": "#1E9ED5", "line_width": 3, "line_style": "dashed", "line_dasharray": [2,2], "line_opacity": 0.6 }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "LineString", "coordinates": [[18.838083,50.251618],[18.837992,50.251594]] },
+      "properties": { "object_type": "line", "line_type": "parking_to_waypoint", "identifier": "ADDRESS_ID",
+                      "color": "#1E9ED5", "line_width": 3, "line_fade": "to_end", "fade_start": 0.7 }
     }
   ],
   "metadata": { "mode": "default", "system": "EPSG:4326" },
-  "view": { "center": { "lat": 52.51706, "lon": 13.40525 }, "zoom": 18,
+  "view": { "center": { "lat": 50.251606, "lon": 18.838203 }, "zoom": 18,
             "orientation": 0, "position_fixed": true, "zoomable": false }
 }
 ```
 </ResponseExample>
 
-## 2. Several addresses at once
+<Info>
+When the entrance is matched to a building, a `polygon` feature (`point_type: "building"`) is also
+included and drawn beneath the markers.
+</Info>
 
-Pass a comma-separated list. Each address is rendered into the same collection, and the camera
-(`view`) is fitted around all of them.
+## 2. Entrance and parking under different identifiers
+
+If your entrance and parking live under separate address ids, pass each to its own parameter — they
+are joined into one stop and connected by the dashed walking path.
 
 <RequestExample>
 ```bash Example Request
-curl --location 'https://api.truemetrics.cloud/lastmetervisualization?identifier=address_a,address_b,address_c' \
+curl --location 'https://api.truemetrics.cloud/lastmetervisualization?identifier_entrance=ENTRANCE_ADDRESS_ID&identifier_parking=PARKING_ADDRESS_ID' \
 --header 'x-api-key: YOUR_API_KEY'
 ```
 </RequestExample>
@@ -71,11 +84,11 @@ curl --location 'https://api.truemetrics.cloud/lastmetervisualization?identifier
 ## 3. Rendered image — transparent
 
 Add `raster=true` to also receive a PNG. With no basemap the image has a **transparent**
-background, so you can overlay it directly on your own map.
+background, so you can overlay it on your own map.
 
 <RequestExample>
 ```bash Example Request
-curl --location 'https://api.truemetrics.cloud/lastmetervisualization?identifier=example_address&raster=true' \
+curl --location 'https://api.truemetrics.cloud/lastmetervisualization?identifier_entrance=ADDRESS_ID&identifier_parking=ADDRESS_ID&raster=true' \
 --header 'x-api-key: YOUR_API_KEY'
 ```
 </RequestExample>
@@ -86,12 +99,12 @@ curl --location 'https://api.truemetrics.cloud/lastmetervisualization?identifier
   "type": "FeatureCollection",
   "features": [ /* … same as example 1 … */ ],
   "metadata": { "mode": "default", "system": "EPSG:4326" },
-  "view": { "center": { "lat": 52.51706, "lon": 13.40525 }, "zoom": 18, "orientation": 0, "position_fixed": true, "zoomable": false },
+  "view": { "center": { "lat": 50.251606, "lon": 18.838203 }, "zoom": 18, "orientation": 0, "position_fixed": true, "zoomable": false },
   "raster": {
     "image": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA…",
     "width": 640,
     "height": 480,
-    "bbox": [13.40484, 52.51690, 13.40566, 52.51731],
+    "bbox": [18.837992, 50.251594, 18.838413, 50.251618],
     "basemap": false
   }
 }
@@ -106,7 +119,7 @@ Add `basemap=true` to draw the geometry on a street basemap.
 
 <RequestExample>
 ```bash Example Request
-curl --location 'https://api.truemetrics.cloud/lastmetervisualization?identifier=example_address&raster=true&basemap=true' \
+curl --location 'https://api.truemetrics.cloud/lastmetervisualization?identifier_entrance=ADDRESS_ID&identifier_parking=ADDRESS_ID&raster=true&basemap=true' \
 --header 'x-api-key: YOUR_API_KEY'
 ```
 </RequestExample>
@@ -119,11 +132,11 @@ The `raster.image` value is a base64 data-URI. To save it as a PNG:
 
 ```bash Save the PNG
 curl -s --header 'x-api-key: YOUR_API_KEY' \
-  'https://api.truemetrics.cloud/lastmetervisualization?identifier=example_address&raster=true&basemap=true' \
+  'https://api.truemetrics.cloud/lastmetervisualization?identifier_entrance=ADDRESS_ID&identifier_parking=ADDRESS_ID&raster=true&basemap=true' \
 | python -c "import sys,json,base64; d=json.load(sys.stdin); open('lastmeter.png','wb').write(base64.b64decode(d['raster']['image'].split(',',1)[1]))"
 ```
 
 <Info>
-If an address has no data yet, the call still returns `200` with an empty `features` array (and no
-`raster`). This is expected — the geometry appears as soon as the address has been processed.
+If the stop has no data yet, the call still returns `200` with an empty `features` array (and no
+`raster`). This is expected — the geometry appears as soon as the stop has been processed.
 </Info>

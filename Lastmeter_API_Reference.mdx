@@ -9,17 +9,26 @@ description: "Endpoint, parameters and response contract."
 GET /lastmetervisualization
 ```
 
-Returns a GeoJSON `FeatureCollection` for the requested address `identifier`(s), optionally with a
-rendered PNG.
+Returns a GeoJSON `FeatureCollection` for **one delivery stop**, optionally with a rendered PNG.
 
 ## Request
 
 ### Query parameters
 
-<ParamField query="identifier" type="string" required>
-  One or more address identifiers as a **comma-separated** list (the `id_address` / merge id you
-  send as metadata). Duplicates are ignored and order does not matter. Up to **100** identifiers
-  per request, each at most **256** characters.
+A request describes a single stop, addressed by up to two address identifiers — the **entrance**
+and the **parking**. They may be the **same** identifier (one address that has both) or **two
+different** identifiers (many systems store the entrance and parking under separate address ids).
+**At least one** of them must be provided.
+
+<ParamField query="identifier_entrance" type="string">
+  The address identifier (the `id_address` / merge id you send as metadata) used to look up the
+  **entrance** — and its **building** footprint. Optional, but at least one of
+  `identifier_entrance` / `identifier_parking` is required.
+</ParamField>
+
+<ParamField query="identifier_parking" type="string">
+  The address identifier used to look up the **parking** and the **waypoint** (these two share the
+  same id). Optional, but at least one of `identifier_entrance` / `identifier_parking` is required.
 </ParamField>
 
 <ParamField query="raster" type="boolean" default="false">
@@ -48,8 +57,8 @@ A standard GeoJSON `FeatureCollection` with two extra top-level blocks, `metadat
 </ResponseField>
 
 <ResponseField name="features" type="array">
-  The map features — see [Feature types](#feature-types) below. May be **empty** when none of the
-  requested identifiers have data yet (this is a normal `200`, not an error).
+  The map features — see [Feature types](#feature-types) below. May be **empty** when the stop has
+  no data yet (this is a normal `200`, not an error).
 </ResponseField>
 
 <ResponseField name="metadata" type="object">
@@ -71,14 +80,14 @@ A standard GeoJSON `FeatureCollection` with two extra top-level blocks, `metadat
 
 ## Feature types
 
-Every feature carries `properties.object_type` (`point` | `line` | `polygon`), an `identifier`,
-and styling hints that map directly to map layer styles.
+Every feature carries `properties.object_type` (`point` | `line` | `polygon`), the `identifier`
+it came from, and styling hints that map directly to map layer styles.
 
 ### Point — entrance / parking / waypoint
 
 <ResponseField name="object_type" type="string">`"point"`</ResponseField>
 <ResponseField name="point_type" type="string">`entrance` · `parking` · `waypoint`</ResponseField>
-<ResponseField name="color" type="string">Marker colour (e.g. red for entrance, blue for parking/waypoint) → `circle-color`.</ResponseField>
+<ResponseField name="color" type="string">Marker colour (red for entrance, blue for parking/waypoint) → `circle-color`.</ResponseField>
 <ResponseField name="marker_size" type="number">Marker radius → `circle-radius`.</ResponseField>
 <ResponseField name="icon" type="string">Icon name for the marker.</ResponseField>
 
@@ -101,17 +110,17 @@ and styling hints that map directly to map layer styles.
 <ResponseField name="line_width" type="number">Outline width.</ResponseField>
 
 <Info>
-Connectors are drawn to the **nearest** parking, so an entrance and parking that you sent under
-**different** identifiers are still connected, while several distinct stops each connect to their
-own closest parking.
+The entrance and parking can come from **different** identifiers. Pass each to its own parameter
+(`identifier_entrance` / `identifier_parking`) and they are joined into one stop — the dashed
+walking path connects them and, when available, the entrance's building is highlighted.
 </Info>
 
 ## Status codes
 
 | Status | Meaning |
 | --- | --- |
-| `200` | Success. A `200` with an empty `features` array means no data exists yet for those identifiers. |
-| `400` | Missing `identifier`, an identifier that is too long, or more than 100 identifiers. |
+| `200` | Success. A `200` with an empty `features` array means the stop has no data yet. |
+| `400` | Neither `identifier_entrance` nor `identifier_parking` was provided. |
 | `403` | Missing or invalid `x-api-key`. |
 
 ## Caching & limits

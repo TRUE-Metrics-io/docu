@@ -8,7 +8,8 @@ ready-to-render picture of the *last meters* of the delivery: where the driver *
 **entrance** that was used, the **walking path** between them, an optional intermediate
 **waypoint**, and the **building** the entrance belongs to.
 
-You request it per address `identifier` and get back:
+You request it for a single delivery stop — by giving the **entrance** and **parking** address
+identifiers (they may be the same id, or two different ids) — and get back:
 
 * a **GeoJSON `FeatureCollection`** you can drop straight onto a [MapLibre](https://maplibre.org/)
   or [Mapbox](https://www.mapbox.com/) map — the styling hints (colours, line widths, dashes) map
@@ -43,6 +44,7 @@ only ever receive your own data — there is no account or customer parameter in
 key and the base URL are provided by your truemetrics contact.
 
 <Info>
-The `identifier` you pass is the same address identifier you send to truemetrics as metadata
-(your `id_address` / merge id). You can request several at once as a comma-separated list.
+The identifiers you pass are the same address identifiers you send to truemetrics as metadata
+(your `id_address` / merge id). The entrance and parking may use **different** identifiers — pass
+each to its own parameter (`identifier_entrance` / `identifier_parking`).
 </Info>
