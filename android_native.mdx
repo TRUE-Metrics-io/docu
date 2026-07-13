@@ -1,6 +1,6 @@
 ---
 title: 'Android Native Integration'
-description: 'Complete guide for integrating Truemetrics SDK 1.5.4 into Android applications'
+description: 'Complete guide for integrating Truemetrics SDK 1.5.8 into Android applications'
 ---
 
 The Truemetrics SDK provides advanced sensor data collection and analytics capabilities for Android
@@ -36,9 +36,17 @@ Then add the dependency to your app-level `build.gradle`:
 
 ```gradle
 dependencies {
-    implementation 'io.truemetrics:truemetricssdk:1.5.4'
+    implementation 'io.truemetrics:truemetricssdk:1.5.8'
 }
 ```
+
+<Note>
+  **Google Play foreground-service declaration (SDK 1.5.7+):** the SDK's recording service declares the
+  **`location`** and **`dataSync`** foreground-service types (previously `location` + `specialUse`). In the
+  Play Console foreground-service-types form, declare **"Location"** and **"Data sync"** for the Truemetrics
+  recording service (and the optional sensor-watchdog service, if enabled). If your existing declaration
+  listed **"Special use"** for a Truemetrics service, replace it with **"Data sync"** (keep **"Location"**).
+</Note>
 
 ## Quick Start
 

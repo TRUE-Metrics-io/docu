@@ -11,8 +11,17 @@ To use this plugin, just add `truemetrics_flutter_sdk` as a dependency in your `
 
 ```yaml
 dependencies:
-  truemetrics_flutter_sdk: ^0.0.1
+  truemetrics_flutter_sdk: ^0.0.12
 ```
+
+<Note>
+  **Google Play foreground-service declaration:** the underlying native SDK's recording service declares the
+  **`location`** and **`dataSync`** foreground-service types (previously `location` + `specialUse`). In the
+  Play Console foreground-service-types form, declare **"Location"** and **"Data sync"** for the Truemetrics
+  recording service. If your existing declaration listed **"Special use"**, replace it with **"Data sync"**
+  (keep **"Location"**).
+</Note>
+
 Go for the initialize of the SDK
 ```
 final sdk = TruemetricsFlutterSdk();
