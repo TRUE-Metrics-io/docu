@@ -116,15 +116,16 @@ it came from, and styling hints that map directly to map layer styles.
 ### Line — walking path / waypoint leg
 
 Lines are the **stored paths** computed by the truemetrics merge pipeline, routed over real GPS
-traces where possible. They can contain many vertices, and a line is only returned once a merged
-path exists for the stop — there are no placeholder lines. Coordinates are ordered source→target
-(the direction in `line_type`).
+traces where possible. They can contain many vertices, and a line is only returned once the
+pipeline has stored a path for the stop — lines are never computed at request time. `path_source`
+tells you how the stored path was derived. Coordinates are ordered source→target (the direction
+in `line_type`).
 
 | Property | Type | Description |
 | --- | --- | --- |
 | `object_type` | string | `"line"` |
 | `line_type` | string | `parking_to_entrance` (the dashed walking path) · `waypoint_to_parking` (the approach) |
-| `path_source` | string | `"legs"` — routed over real GPS traces · `"straight"` — straight-line placeholder geometry |
+| `path_source` | string | `"legs"` — routed over real GPS traces · `"straight"` — the pipeline could not route this pair yet, so the stored path is the direct source→target segment |
 | `color` | string | Line colour → `line-color` |
 | `line_width` | number | Line width → `line-width` |
 | `line_style` | string | `"dashed"` for the walking path; combine with `line_dasharray` (e.g. `[2,2]`) |
