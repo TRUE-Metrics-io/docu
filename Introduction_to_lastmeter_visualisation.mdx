@@ -32,7 +32,7 @@ identifiers (they may be the same id, or two different ids) — and get back:
 | **Entrance** | The detected door / delivery point for the address. |
 | **Parking** | Where the driver parked the vehicle. |
 | **Waypoint** | An optional point along the walking route. |
-| **Walking path** | A dashed line from parking to entrance. |
+| **Walking path** | The detected walking route from parking to entrance (dashed), returned once the merge pipeline has computed it. |
 | **Building** | The building footprint the entrance belongs to (when available). |
 
 All coordinates are returned in **EPSG:4326** (WGS84 longitude/latitude).
