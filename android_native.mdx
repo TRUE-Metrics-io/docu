@@ -1,6 +1,6 @@
 ---
 title: 'Android Native Integration'
-description: 'Complete guide for integrating Truemetrics SDK 1.5.8 into Android applications'
+description: 'Complete guide for integrating Truemetrics SDK 1.6.0 into Android applications'
 ---
 
 The Truemetrics SDK provides advanced sensor data collection and analytics capabilities for Android
@@ -36,7 +36,7 @@ Then add the dependency to your app-level `build.gradle`:
 
 ```gradle
 dependencies {
-    implementation 'io.truemetrics:truemetricssdk:1.5.8'
+    implementation 'io.truemetrics:truemetricssdk:1.6.0'
 }
 ```
 
@@ -156,7 +156,7 @@ if (sdk.getDeviceId() != null) {
 
 ### Calling Other APIs Before Initialization Completes
 
-- `startRecording()` — safe to call immediately after `init()`. If the service is not yet bound, the request is queued and executed once binding completes. However, if called after the service binds but **before** the config fetch succeeds, it will transition the SDK to `Status.Error(CONFIG_ERROR)`. To avoid this, either await `Status.Initialized` first, or rely on the auto-start configuration (see [Configuration](#configuration)).
+- `startRecording()` — safe to call immediately after `init()`. If the service is not yet bound, the request is queued and executed once binding completes. If initialization has failed, the call transitions the SDK to `Status.Error(CONFIG_ERROR)`; if the SDK was never initialized, to `Status.Error(NOT_INITIALIZED)`. To avoid the first, await `Status.Initialized` before calling it, or configure an auto-start (see [Recording lifecycle](#recording-lifecycle)).
 - `logMetadata()` — ignored with a log warning if called before initialization. Wait for `Status.Initialized` before logging.
 - `getDeviceId()`, `getActiveConfig()`, `getUploadStatistics()`, `getSensorStatistics()` — return `null` until initialization completes.
 
@@ -167,6 +167,7 @@ if (sdk.getDeviceId() != null) {
 | `Status.Initializing` (stuck) | Backend unreachable or returning 5xx; SDK auto-retries every 30s | Wait, or surface a "connecting" indicator. No need to call `init()` again. |
 | `Status.Error(AUTHENTICATION_ERROR)` | API key invalid, expired, or revoked. SDK has deinitialized itself. | Do **not** retry with the same key. Fix the key, then call `init()` again. |
 | `Status.Error(CONFIG_ERROR)` | `startRecording()` was called before config was loaded | Await `Status.Initialized` before calling `startRecording()`. |
+| `Status.Error(NOT_INITIALIZED)` | `startRecording()` was called without an initialized SDK — before `init()`, or after `deinitialize()` | Call `init()` first. The request is not held; call `startRecording()` again once initialized. |
 | `Status.Error(MISSING_NOTIFICATION_PERMISSION)` | Android 13+ notification permission not granted | Request `POST_NOTIFICATIONS`, then re-init. |
 
 ---
@@ -180,6 +181,46 @@ The SDK is configured using the `SdkConfiguration.Builder` class.
 ```kotlin
 val config = SdkConfiguration.Builder("YOUR_API_KEY").build()
 ```
+
+### Recording lifecycle
+
+`init()` does not start recording. A recording begins when the host calls `startRecording()`, and
+continues until `stopRecording()` or `deinitialize()`.
+
+A recording that was started is **resumed automatically** the next time the app initializes the SDK,
+so an app that is killed, restarted or updated mid-recording picks up where it left off. `init()` is
+what performs that resume — it never stops an active recording.
+
+To have the SDK start recording on its own instead, configure a delay:
+
+```kotlin
+// Start as soon as init() completes
+val config = SdkConfiguration.Builder("YOUR_API_KEY")
+    .delayAutoStartRecording(SdkConfiguration.AUTO_START_ON_INIT)
+    .build()
+
+// Or start after a delay
+val delayed = SdkConfiguration.Builder("YOUR_API_KEY")
+    .delayAutoStartRecording(30_000L)                       // milliseconds
+    .build()
+
+val units = SdkConfiguration.Builder("YOUR_API_KEY")
+    .delayAutoStartRecording(2, TimeUnit.MINUTES)
+    .build()
+```
+
+While a configured delay is pending, the SDK reports `Status.DelayedStart`. Calling
+`stopRecording()` in that window cancels the pending start. The default is
+`SdkConfiguration.EXPLICIT_START`, and any negative value means the same thing: wait for an explicit
+`startRecording()`.
+
+<Note>
+**Changed in 1.6.0.** Releases 1.3.0 through 1.5.x defaulted to `AUTO_START_ON_INIT`, so an app that
+called `init()` was recording even if it never called `startRecording()`. If you relied on that,
+set `delayAutoStartRecording(SdkConfiguration.AUTO_START_ON_INIT)` explicitly. A device that was
+recording when it was updated keeps recording until it is stopped once with `stopRecording()` or
+`deinitialize()`; every launch after that follows the new default.
+</Note>
 
 ### Custom Foreground Notification
 

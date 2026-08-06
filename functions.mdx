@@ -1,6 +1,6 @@
 ---
 title: 'SDK Interface'
-description: 'Overview of the functionality of the Truemetrics Android SDK 1.5.8'
+description: 'Overview of the functionality of the Truemetrics Android SDK 1.6.0'
 ---
 
 ### Setup and Maven Repository
@@ -27,7 +27,7 @@ dependencyResolutionManagement {
 Inside your `build.gradle` add the following dependency:
 
 ```groovy
-implementation 'io.truemetrics:truemetricssdk:1.5.8'
+implementation 'io.truemetrics:truemetricssdk:1.6.0'
 ```
 
 ### Initialize SDK
@@ -129,6 +129,7 @@ When `Status.Error` is received, the `errorCode` indicates what went wrong:
 | CONFIG_ERROR | Configuration error |
 | TRAFFIC_USED_UP | All allotted traffic has been used |
 | SENSORS_NOT_WORKING | Some sensors are not working. Check if permissions are missing |
+| NOT_INITIALIZED | `startRecording()` was called before `init()`, so there is nothing to record with |
 
 ### Start Recording
 
@@ -138,6 +139,12 @@ sdk.startRecording()
 ```
 
 Starting the recording also starts the Foreground service and shows the notification. Recording continues even when the app exits.
+
+`init()` on its own does not start recording. A recording that was started is resumed automatically the next time the app initializes the SDK, so a restart or an app update does not lose it. To have the SDK start on its own instead, configure `delayAutoStartRecording` — see [Recording lifecycle](/android_native#recording-lifecycle).
+
+<Note>
+**Changed in 1.6.0.** Releases 1.3.0 through 1.5.x started recording on `init()` by default. If your app relied on that, pass `delayAutoStartRecording(SdkConfiguration.AUTO_START_ON_INIT)`.
+</Note>
 
 ### Stop Recording
 

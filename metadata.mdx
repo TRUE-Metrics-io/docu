@@ -50,9 +50,11 @@ sdk.logMetadata(StandardMetadata(
 The map-based `logMetadata(Map<String, String>)` overload is deprecated. Use `logMetadata(StandardMetadata)` instead.
 </Note>
 
-# Required Metadata Fields
+# Standard Metadata Fields
 
-The `StandardMetadata` class contains the following fields. All fields are strings.
+The `StandardMetadata` class contains the following fields. All fields are strings, and all are
+optional: an omitted or `null` field is uploaded as an empty string, which is what passing `""` has
+always produced. Supply the ones your event actually has.
 
 | Field | Serialized Key | Description |
 | --- | --- | --- |
