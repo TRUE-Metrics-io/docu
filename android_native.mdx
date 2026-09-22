@@ -111,7 +111,7 @@ Uninitialized ──► Initializing ──► Initialized
 | Invalid API key | fails fast (under ~2 seconds) with `Status.Error(AUTHENTICATION_ERROR)` |
 
 <Note>
-There is no hard timeout on initialization. Under poor connectivity the SDK stays in `Status.Initializing` and keeps retrying. Do not impose an arbitrary client-side timeout — either wait for `Status.Initialized`/`Status.Error`, or gate UI on `getDeviceId()` becoming non-null.
+There is no hard timeout on initialization. Under poor connectivity the SDK stays in `Status.Initializing` and keeps retrying. Do not impose an arbitrary client-side timeout — either wait for `Status.Initialized` or a `Status.Error` whose `errorCode` is not `FOREGROUND_SERVICE_START_REFUSED` (that one clears itself, see below), or gate UI on `getDeviceId()` becoming non-null.
 </Note>
 
 ### Checking Initialization Status
