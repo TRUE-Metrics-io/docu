@@ -126,6 +126,7 @@ When `Status.Error` is received, the `errorCode` indicates what went wrong:
 | UPLOAD_ERROR | Recordings couldn't be uploaded after exhausting all attempts |
 | STORAGE_FULL | Device storage is full which prevents saving sensor readings |
 | MISSING_NOTIFICATION_PERMISSION | Notification permission not granted, foreground service cannot start |
+| FOREGROUND_SERVICE_START_REFUSED | Android refused to start the foreground service because the app was in the background; transient, the SDK retries when a screen next reaches the foreground |
 | CONFIG_ERROR | Configuration error |
 | TRAFFIC_USED_UP | All allotted traffic has been used |
 | SENSORS_NOT_WORKING | Some sensors are not working. Check if permissions are missing |
