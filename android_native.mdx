@@ -94,8 +94,8 @@ Uninitialized ──► Initializing ──► Initialized
                        ├──► Error(AUTHENTICATION_ERROR)   (invalid/expired/revoked API key)
                        │
                        ├──► Error(FOREGROUND_SERVICE_START_REFUSED) ──► Initialized
-                       │    (init() ran in the background; recovers by itself when a
-                       │     screen next reaches the foreground)
+                       │    (init() ran in the background; clears when a screen
+                       │     next reaches the foreground)
                        │
                        └──► stays in Initializing, retrying every 30s
                             (network unreachable, 5xx from backend, timeouts)
@@ -129,10 +129,8 @@ suspend fun awaitSdkReady(): String {
         status is Status.Initialized ||
         status is Status.RecordingInProgress ||
         status is Status.DelayedStart ||
-        // Every error is final except this one: Android refused to start the foreground
-        // service because the app was in the background, and the SDK clears it by itself
-        // once one of your screens comes to the foreground. Treating it as a failure gives
-        // up on an initialization that was about to succeed.
+        // The one error that is not final: the SDK clears it itself once a screen
+        // reaches the foreground. Failing here gives up on a working session.
         (status is Status.Error &&
             status.errorCode != ErrorCode.FOREGROUND_SERVICE_START_REFUSED)
     }
@@ -144,9 +142,8 @@ suspend fun awaitSdkReady(): String {
 ```
 
 <Warning>
-  If your app has no screen to bring to the foreground — a headless or MDM-managed
-  integration — there is no moment for the SDK to retry at. Call `init()` again from a place
-  Android allows a foreground service to start, such as an activity or an exempt receiver.
+  An app with no screen — headless or MDM-managed — never gives the SDK a moment to retry at.
+  Call `init()` again from an activity or an exempt receiver instead.
 </Warning>
 
 **Non-blocking — react to state changes as they arrive:**
@@ -172,7 +169,7 @@ if (sdk.getDeviceId() != null) {
 
 ### Calling Other APIs Before Initialization Completes
 
-- `startRecording()` — safe to call immediately after `init()`. If the service is not yet bound, the request is queued and executed once binding completes. It is also kept, and begins by itself, when Android refused the foreground-service start — see `FOREGROUND_SERVICE_START_REFUSED` below. If initialization has failed for another reason, the call reports `Status.Error(CONFIG_ERROR)` unless a more specific error is already being reported, which is then left in place; if the SDK was never initialized, `Status.Error(NOT_INITIALIZED)`. To avoid these, await `Status.Initialized` before calling it, or configure an auto-start (see [Recording lifecycle](#recording-lifecycle)).
+- `startRecording()` — safe to call immediately after `init()`. If the service is not yet bound, or Android refused the foreground-service start, the request is kept and runs once the service is up. If initialization failed for another reason the call reports `Status.Error(CONFIG_ERROR)`, unless a more specific error is already reported — that one stays; if the SDK was never initialized, `Status.Error(NOT_INITIALIZED)`. To avoid these, await `Status.Initialized` first, or configure an auto-start (see [Recording lifecycle](#recording-lifecycle)).
 - `logMetadata()` — ignored with a log warning if called before initialization. Wait for `Status.Initialized` before logging.
 - `getDeviceId()`, `getActiveConfig()`, `getUploadStatistics()`, `getSensorStatistics()` — return `null` until initialization completes.
 
@@ -185,7 +182,7 @@ if (sdk.getDeviceId() != null) {
 | `Status.Error(CONFIG_ERROR)` | `startRecording()` was called before config was loaded | Await `Status.Initialized` before calling `startRecording()`. |
 | `Status.Error(NOT_INITIALIZED)` | `startRecording()` was called without an initialized SDK — before `init()`, or after `deinitialize()` | Call `init()` first. The request is not held; call `startRecording()` again once initialized. |
 | `Status.Error(MISSING_NOTIFICATION_PERMISSION)` | Android 13+ notification permission not granted | Request `POST_NOTIFICATIONS`, then re-init. |
-| `Status.Error(FOREGROUND_SERVICE_START_REFUSED)` | **Transient.** `init()` ran while the app was in the background and Android refused to start the foreground service | None. The SDK retries when one of your screens next reaches the foreground, and a `startRecording()` issued meanwhile is kept and begins then. Do **not** treat it as fatal. An app with no screen retries by calling `init()` again from an allowed context. |
+| `Status.Error(FOREGROUND_SERVICE_START_REFUSED)` | **Transient.** `init()` ran in the background; Android refused the foreground service | None — the SDK retries when a screen next reaches the foreground, and a `startRecording()` issued meanwhile begins then. An app with no screen: call `init()` again from an activity or exempt receiver. |
 
 ---
 
@@ -419,7 +416,7 @@ sdk.observeSdkStatus().collect { status ->
 | UPLOAD_ERROR | Recordings couldn't be uploaded after exhausting all attempts |
 | STORAGE_FULL | Device storage is full which prevents saving sensor readings |
 | MISSING_NOTIFICATION_PERMISSION | Notification permission not granted, foreground service cannot start |
-| FOREGROUND_SERVICE_START_REFUSED | Android refused to start the foreground service because the app was in the background; transient, the SDK retries when a screen next reaches the foreground |
+| FOREGROUND_SERVICE_START_REFUSED | `init()` ran in the background and Android refused the foreground service; transient, the SDK retries when a screen reaches the foreground |
 | CONFIG_ERROR | Configuration error |
 | TRAFFIC_USED_UP | All allotted traffic has been used |
 | SENSORS_NOT_WORKING | Some sensors are not working. Check if permissions are missing |
