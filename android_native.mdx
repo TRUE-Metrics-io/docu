@@ -1,6 +1,6 @@
 ---
 title: 'Android Native Integration'
-description: 'Complete guide for integrating Truemetrics SDK 1.6.0 into Android applications'
+description: 'Complete guide for integrating Truemetrics SDK 1.6.3 into Android applications'
 ---
 
 The Truemetrics SDK provides advanced sensor data collection and analytics capabilities for Android
@@ -36,7 +36,7 @@ Then add the dependency to your app-level `build.gradle`:
 
 ```gradle
 dependencies {
-    implementation 'io.truemetrics:truemetricssdk:1.6.0'
+    implementation 'io.truemetrics:truemetricssdk:1.6.3'
 }
 ```
 
@@ -143,8 +143,8 @@ suspend fun awaitSdkReady(): String {
 
 <Warning>
   If your app has no UI — headless, or driven by an MDM — it never comes to the foreground,
-  so the SDK gets no chance to retry. Call `init()` again from an activity, or from a
-  receiver Android exempts.
+  so the SDK gets no chance to retry. Call `deinitialize()` and then `init()` again from a
+  context Android allows, such as a receiver it exempts.
 </Warning>
 
 **Non-blocking — react to state changes as they arrive:**
@@ -183,7 +183,7 @@ if (sdk.getDeviceId() != null) {
 | `Status.Error(CONFIG_ERROR)` | `startRecording()` was called before config was loaded | Await `Status.Initialized` before calling `startRecording()`. |
 | `Status.Error(NOT_INITIALIZED)` | `startRecording()` was called without an initialized SDK — before `init()`, or after `deinitialize()` | Call `init()` first. The request is not held; call `startRecording()` again once initialized. |
 | `Status.Error(MISSING_NOTIFICATION_PERMISSION)` | Android 13+ notification permission not granted | Request `POST_NOTIFICATIONS`, then re-init. |
-| `Status.Error(FOREGROUND_SERVICE_START_REFUSED)` | **Transient.** `init()` ran in the background, where Android refuses to start a foreground service | None. The SDK retries when your UI comes to the foreground, and a `startRecording()` made in the meantime runs then. If your app has no UI, call `init()` again from an activity or an exempt receiver. |
+| `Status.Error(FOREGROUND_SERVICE_START_REFUSED)` | **Transient.** `init()` ran in the background, where Android refuses to start a foreground service | None. The SDK retries when your UI comes to the foreground, and a `startRecording()` made in the meantime runs then. If your app has no UI, call `deinitialize()` and then `init()` again from an exempt receiver. |
 
 ---
 
