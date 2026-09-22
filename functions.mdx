@@ -130,7 +130,7 @@ When `Status.Error` is received, the `errorCode` indicates what went wrong:
 | CONFIG_ERROR | Configuration error |
 | TRAFFIC_USED_UP | All allotted traffic has been used |
 | SENSORS_NOT_WORKING | Some sensors are not working. Check if permissions are missing |
-| NOT_INITIALIZED | `startRecording()` was called before `init()`, so there is nothing to record with |
+| NOT_INITIALIZED | `startRecording()` was called before `init()` or after `deinitialize()`, so there is nothing to record with |
 
 ### Start Recording
 
