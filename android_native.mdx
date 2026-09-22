@@ -144,7 +144,8 @@ suspend fun awaitSdkReady(): String {
 <Warning>
   If your app has no UI — headless, or driven by an MDM — it never comes to the foreground,
   so the SDK gets no chance to retry. Call `deinitialize()` and then `init()` again from a
-  context Android allows, such as a receiver it exempts.
+  context Android allows, such as a receiver it exempts, and then `startRecording()` again —
+  `deinitialize()` drops a pending request.
 </Warning>
 
 **Non-blocking — react to state changes as they arrive:**
@@ -183,7 +184,7 @@ if (sdk.getDeviceId() != null) {
 | `Status.Error(CONFIG_ERROR)` | `startRecording()` was called before config was loaded | Await `Status.Initialized` before calling `startRecording()`. |
 | `Status.Error(NOT_INITIALIZED)` | `startRecording()` was called without an initialized SDK — before `init()`, or after `deinitialize()` | Call `init()` first. The request is not held; call `startRecording()` again once initialized. |
 | `Status.Error(MISSING_NOTIFICATION_PERMISSION)` | Android 13+ notification permission not granted | Request `POST_NOTIFICATIONS`, then re-init. |
-| `Status.Error(FOREGROUND_SERVICE_START_REFUSED)` | **Transient.** `init()` ran in the background, where Android refuses to start a foreground service | None. The SDK retries when your UI comes to the foreground, and a `startRecording()` made in the meantime runs then. If your app has no UI, call `deinitialize()` and then `init()` again from an exempt receiver. |
+| `Status.Error(FOREGROUND_SERVICE_START_REFUSED)` | **Transient.** `init()` ran in the background, where Android refuses to start a foreground service | None. The SDK retries when your UI comes to the foreground, and a `startRecording()` made in the meantime runs then. If your app has no UI, call `deinitialize()` and then `init()` again from an exempt receiver, then `startRecording()` again — `deinitialize()` drops a pending request. |
 
 ---
 
