@@ -60,6 +60,15 @@ different** identifiers (many systems store the entrance and parking under separ
   that send a reference coordinate with their metadata.
 </ParamField>
 
+<ParamField query="width" type="integer" default="640">
+  Raster image **width** in pixels (only with `raster=true`). Clamped to **64–1280**.
+</ParamField>
+
+<ParamField query="height" type="integer" default="480">
+  Raster image **height** in pixels (only with `raster=true`). Clamped to **64–1280**. Combine
+  with `width` to request any size / aspect ratio (e.g. `width=1000&height=1000` for a square).
+</ParamField>
+
 ### Headers
 
 <ParamField header="x-api-key" type="string" required>
@@ -94,7 +103,8 @@ A standard GeoJSON `FeatureCollection` with two extra top-level blocks, `metadat
 <ResponseField name="raster" type="object">
   Present only when `raster=true` and the collection is non-empty:
   `{ image, width, height, bbox, basemap }`, where `image` is a `data:image/png;base64,…`
-  data-URI, `bbox` is `[minLon, minLat, maxLon, maxLat]`, and `basemap` indicates whether a street
+  data-URI, `width`/`height` are the pixel dimensions (defaults 640×480, or your `width`/`height`
+  params), `bbox` is `[minLon, minLat, maxLon, maxLat]`, and `basemap` indicates whether a street
   basemap was drawn.
 </ResponseField>
 
