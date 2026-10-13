@@ -54,10 +54,10 @@ curl --location 'https://geodata.truemetrics.cloud/V1/lastmetervisualization?ide
       "type": "Feature",
       "geometry": { "type": "LineString", "coordinates": [[18.837992,50.251594],[18.838041,50.251611],[18.838083,50.251618]] },
       "properties": { "object_type": "line", "line_type": "waypoint_to_parking", "identifier": "ADDRESS_ID", "path_source": "legs",
-                      "color": "#1E9ED5", "line_width": 3, "line_fade": "to_start", "fade_start": 0.3 }
+                      "color": "#1E9ED5", "line_width": 3 }
     }
   ],
-  "metadata": { "mode": "default", "system": "EPSG:4326" },
+  "metadata": { "mode": "default", "system": "EPSG:4326", "waypoint_style": "marker" },
   "view": { "center": { "lat": 50.251606, "lon": 18.838203 }, "zoom": 18,
             "orientation": 0, "position_fixed": true, "zoomable": false }
 }
@@ -98,7 +98,7 @@ curl --location 'https://geodata.truemetrics.cloud/V1/lastmetervisualization?ide
 {
   "type": "FeatureCollection",
   "features": [ /* … same as example 1 … */ ],
-  "metadata": { "mode": "default", "system": "EPSG:4326" },
+  "metadata": { "mode": "default", "system": "EPSG:4326", "waypoint_style": "marker" },
   "view": { "center": { "lat": 50.251606, "lon": 18.838203 }, "zoom": 18, "orientation": 0, "position_fixed": true, "zoomable": false },
   "raster": {
     "image": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA…",

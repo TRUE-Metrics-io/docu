@@ -82,8 +82,11 @@ A standard GeoJSON `FeatureCollection` with two extra top-level blocks, `metadat
 </ResponseField>
 
 <ResponseField name="metadata" type="object">
-  `{ "mode": "default", "system": "EPSG:4326" }` — the coordinate reference system of all
-  geometry.
+  `{ "mode": "default", "system": "EPSG:4326", "waypoint_style": "marker" }` — the coordinate
+  reference system of all geometry, and how your account draws the waypoint:
+  `"marker"` (a waypoint point at the end of a solid `waypoint_to_parking` line) or
+  `"faded"` (no waypoint marker; the `waypoint_to_parking` line fades out toward the
+  waypoint, see `line_fade`).
 </ResponseField>
 
 <ResponseField name="view" type="object | null">
@@ -124,13 +127,15 @@ in `line_type`).
 | Property | Type | Description |
 | --- | --- | --- |
 | `object_type` | string | `"line"` |
-| `line_type` | string | `parking_to_entrance` (the dashed walking path) · `waypoint_to_parking` (the approach) |
+| `line_type` | string | `parking_to_entrance` (the dashed walking path) · `waypoint_to_parking` (the approach from the waypoint to the parking) |
 | `path_source` | string | `"legs"` — routed over real GPS traces · `"straight"` — the pipeline could not route this pair yet, so the stored path is the direct source→target segment |
 | `color` | string | Line colour → `line-color` |
 | `line_width` | number | Line width → `line-width` |
 | `line_style` | string | `"dashed"` for the walking path; combine with `line_dasharray` (e.g. `[2,2]`) |
 | `line_opacity` | number | Opacity of the walking path (e.g. `0.6`) → `line-opacity` |
-| `line_fade` / `fade_start` | string / number | `waypoint_to_parking` fades toward the waypoint: `line_fade: "to_start"` — transparent at the start of the line, full opacity from `fade_start` (e.g. `0.3`) onward — render with a `line-gradient` |
+| `line_fade` / `fade_start` | string / number | Only with `waypoint_style: "faded"`: `waypoint_to_parking` fades toward the waypoint — `line_fade: "to_start"`, transparent at the start of the line, full opacity from `fade_start` (e.g. `0.3`) onward — render with a `line-gradient` |
+
+Paths are raw GPS-routed vertices. Render them with `line-join: "round"` and `line-cap: "round"` for smooth corners; the PNG from `raster=true` already rounds them.
 
 ### Polygon — building footprint
 
