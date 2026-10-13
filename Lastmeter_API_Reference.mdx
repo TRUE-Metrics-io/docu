@@ -124,13 +124,14 @@ in `line_type`).
 | Property | Type | Description |
 | --- | --- | --- |
 | `object_type` | string | `"line"` |
-| `line_type` | string | `parking_to_entrance` (the dashed walking path) · `waypoint_to_parking` (the approach) |
+| `line_type` | string | `parking_to_entrance` (the dashed walking path) · `waypoint_to_parking` (the approach — a solid line from the waypoint point to the parking) |
 | `path_source` | string | `"legs"` — routed over real GPS traces · `"straight"` — the pipeline could not route this pair yet, so the stored path is the direct source→target segment |
 | `color` | string | Line colour → `line-color` |
 | `line_width` | number | Line width → `line-width` |
 | `line_style` | string | `"dashed"` for the walking path; combine with `line_dasharray` (e.g. `[2,2]`) |
 | `line_opacity` | number | Opacity of the walking path (e.g. `0.6`) → `line-opacity` |
-| `line_fade` / `fade_start` | string / number | `waypoint_to_parking` fades toward the waypoint: `line_fade: "to_start"` — transparent at the start of the line, full opacity from `fade_start` (e.g. `0.3`) onward — render with a `line-gradient` |
+
+Paths are raw GPS-routed vertices. Render them with `line-join: "round"` and `line-cap: "round"` for smooth corners; the PNG from `raster=true` already rounds them.
 
 ### Polygon — building footprint
 
