@@ -130,7 +130,7 @@ Put everything else into `extra` (or as extra keys in the map):
 | delivery_state | success, failed, or special (e.g. delivered to neighbor, customer not home, parcel locker), plus the raw internal code. |
 | delivered_to_neighbor | Required. `true` if handed to a neighbor or any other address than the recipient's, else `false`. Plus `neighbor_address` / `neighbor_address_id` if known. |
 | service_type | Raw internal code as-is (e.g. signature required, age check). |
-| eta_first, eta_latest | First planned ETA and the most recent updated ETA. |
+| eta_first, eta_latest | Required. First planned ETA and the most recent updated ETA, as ISO 8601 timestamps. If the app has only one ETA, send it in both. |
 | street, house_number, postal_code, city | Address parts, if the app has them separately. |
 | vehicle_type, driver_id, driver_experience, ... | Any other fields commonly used in this app's systems. |
 
@@ -140,7 +140,7 @@ Confirm with me: the field mapping from this app's data models to the tables abo
 
 Required. Exactly once per route, at the moment the route is actually started, make one dedicated `logMetadata` call for the planned sequence. It is its own event, never combined with a delivery event. Set `eventType` = `planned_sequence`, `eventTime` and `tourId` set, and in `extra` under the key `planned_sequence` the ordered list of planned stops serialized as a JSON array string, e.g. `[{"seq":1,"task_id":"T321","eta":"2026-10-15T08:12:00Z"}, ...]`. Also set `extra.stop_count`.
 
-Traceability: each planned stop needs exactly one identifier, e.g. task_id, stop_id or parcel_id, whichever the app has. Use the same key name and value in the delivery events from section 5 (add it to their `extra` if missing), so truemetrics can match each planned stop to its actual delivery event. No further IDs are needed in the sequence.
+Traceability: each planned stop needs exactly one identifier, e.g. task_id, stop_id or parcel_id, whichever the app has. Use the same key name and value in the delivery events from section 5 (add it to their `extra` if missing), so truemetrics can match each planned stop to its actual delivery event. No further IDs are needed in the sequence. Required: each planned stop must also carry its planned ETA in `eta` (ISO 8601).
 
 Size: one metadata event is uploaded as a single item and is dropped if it exceeds the SDK upload payload limit (700 KB by default). A typical route of 100 to 200 stops is around 20 to 50 KB, so one event is fine. If the serialized JSON exceeds 200 KB, split it into several `planned_sequence` events with `extra.part` (1, 2, ...) and `extra.part_count`.
 
@@ -188,7 +188,7 @@ Gradle:
 - All required permissions present in the merged manifest and requested at runtime before recording.
 - Init on login with API key, explicit start, deinit on logout, status observed and logged.
 - Start and stop recording at the confirmed triggers, guarded by `isRecordingInProgress()`.
-- Exactly one metadata event per delivery attempt, successful or failed, and one planned sequence event at route start.
+- Exactly one metadata event per delivery attempt, successful or failed, with `eta_first` and `eta_latest`, and one planned sequence event with an `eta` per stop at route start.
 - Device ID stored in our systems.
 - Give me a short summary of every file changed and a test plan: developer test on a real Android device, then a system test with about 3 hours of recording under field-like conditions.
 ````
