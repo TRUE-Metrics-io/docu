@@ -39,7 +39,7 @@
     },
     {
       "group": "SDK integration",
-      "pages": [ "android_native", "ios", "flutter", "react_native", "expo", "metadata", "data_consumption_and_battery"]      
+      "pages": [ "with_agent", "android_native", "ios", "flutter", "react_native", "expo", "metadata", "data_consumption_and_battery"]      
     },
     {
       "group": "Data Export",
