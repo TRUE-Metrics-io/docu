@@ -1,0 +1,194 @@
+---
+title: 'Integrate with an AI Agent'
+sidebarTitle: 'With agent'
+description: 'Copy-paste prompt that lets a coding agent integrate the truemetrics SDK into your courier app'
+---
+
+## How to use this prompt
+
+Paste the prompt below into your coding agent (Claude Code, Cursor, Copilot or similar) with your courier app repository open. The agent analyzes your app, proposes where each truemetrics call goes, asks you to confirm every integration point, and then implements it.
+
+Before you start, request your API key from truemetrics by emailing [jan@truemetrics.io](mailto:jan@truemetrics.io). The prompt references the exact SDK functions for Android native, Flutter, Expo and React Native.
+
+## The prompt
+
+Copy everything inside the block.
+
+````markdown
+# Task: Integrate the truemetrics SDK into this courier app
+
+You are integrating the truemetrics telemetry SDK into this courier/driver app. truemetrics records device sensor data during delivery tours and uses it to detect stops, parking places and building entrances, and to measure stop times. Data collection, buffering and upload are handled by the SDK itself. The app only needs to: initialize the SDK, start/stop recording, and log metadata.
+
+Work in this order:
+1. Analyze the codebase: language and framework, login/logout, route start/end, navigation start, delivery confirmation (success/fail), app lifecycle and crash handling, and the data models for routes, stops, deliveries, parcels and addresses.
+2. For EACH integration point below, propose the exact file, function and line, explain why, and ASK ME TO CONFIRM before writing code. Ask all questions in one batch where possible.
+3. Implement only what I confirmed. Keep changes minimal and isolated (ideally one wrapper class, e.g. `TruemetricsTracker`).
+4. Use the SDK API reference at the end of this prompt. If a signature differs in the installed version, the installed version wins.
+
+## API key
+
+The API key is issued by truemetrics. If I have not given you one, stop and tell me to request it from jan@truemetrics.io. Store it in the app's existing secrets/config mechanism (e.g. Gradle property, .env, build config), never hard-coded in source or committed to git.
+
+## 0. Choose the SDK variant
+
+Detect the app's language and framework, then pick the matching SDK and tell me which one you chose:
+- Android native (Kotlin/Java): `io.truemetrics:truemetricssdk` from the truemetrics Maven repo.
+- Flutter: package `truemetrics_flutter_sdk`.
+- React Native with Expo: package `expo-truemetrics-sdk`.
+- Bare React Native: native module `TruemetricsSdkModule` as in the React Native demo app.
+
+Reference implementations (public GitHub, org TRUE-Metrics-io): `truemetrics_android_demo_app_p` (Kotlin), `truemetrics_flutter_p` (Flutter plugin + example), `truemetrics_android_demo_expo_app_p` and `truemetrics_expo_p` (Expo), `truemetrics_android_demo_react_app_p` (React Native).
+
+iOS: truemetrics does NOT record on iPhone/iOS devices. In cross-platform apps, guard every truemetrics call with a platform check (`Platform.OS === 'android'` in React Native, `Platform.isAndroid` in Flutter) so it only runs on Android and is a safe no-op on iOS. Do not add iOS permissions or background modes for truemetrics.
+
+Confirm with me: the detected framework and the SDK variant.
+
+## 1. Permissions and configuration
+
+The single source of truth for permissions is the SDK's own `AndroidManifest.xml`. Do not rely on a hard-coded list: permissions change between SDK versions.
+Read it for the installed SDK version: the `AndroidManifest.xml` inside the `truemetricssdk` AAR (Maven repo, Gradle cache, or the Flutter / Expo plugin's `android` folder), or the manifest merger report after a build (`app/build/outputs/logs/manifest-merger-*-report.txt`). List every `uses-permission` and `service` it declares. They merge into the app automatically: make sure the app's config removes none of them (`tools:node="remove"`). Re-check this whenever the SDK version is updated.
+
+Steps:
+- Check the app's config files: `app/src/main/AndroidManifest.xml` (native), `android/app/src/main/AndroidManifest.xml` (Flutter, bare React Native), `app.json` / `app.config.js` plugins and `android.permissions` (Expo), plus Gradle files (minSdk, repositories, dependency).
+- Add the SDK dependency and repository if missing.
+- Request the runtime permissions BEFORE recording starts, ideally right after login: every runtime (dangerous) permission found in the SDK manifest, location first and background location after it. Reuse the app's existing permission flow if it has one.
+- Handle the SDK status `AskForPermissions(permissions)` by requesting the listed permissions.
+- Exclude the app from battery optimization if the app's existing flow supports it.
+
+Show me the permission and config diff before applying it.
+
+## 2. Initialization and deinitialization
+
+- Initialize the SDK once per session during the login procedure, right after a successful login, while the app is in the foreground. It needs the API key and, on native Android, a foreground notification factory.
+- Use explicit start: recording must only begin when `startRecording()` is called (this is the default since SDK 1.6.0; do not enable auto-start).
+- Before init, check that the SDK is not already initialized.
+- Deinitialize on logout.
+- Observe the SDK status and log errors. Do not treat every `Error` as fatal: `FOREGROUND_SERVICE_START_REFUSED` recovers on its own when the app returns to the foreground.
+- Optional: assert or log an error if the SDK is still not initialized 10 seconds after init was called.
+
+Confirm with me: where login completes, and where logout happens.
+
+## 3. Start recording
+
+`startRecording()` starts the sensor recording and the foreground service notification. It should run when the courier leaves the depot. Preferred triggers, in this order:
+1. Driver starts the route (preferred).
+2. Navigation is started for the first time after login.
+3. After the first delivery is completed (acceptable if missing the first stop is OK).
+4. During login (fallback only: records extra data, e.g. while the vehicle is being loaded).
+
+Check `isRecordingInProgress()` before starting to avoid duplicate starts.
+
+IMPORTANT, no high-frequency start/stop: the SDK is not designed to be started and stopped often. Start recording once at the beginning of the route and stop it once when the route is finished or the user logs off. In between, leave it running: do NOT stop and restart per stop, per delivery, per screen, or when the app goes to the background. The only accepted exception is a courier break that must not be recorded (e.g. a lunch break the app knows about): stop at break start and start again at break end.
+
+Confirm with me: which trigger this app supports and where it lives in code.
+
+## 4. Stop recording
+
+Call `stopRecording()` (stops recording and the foreground service) when:
+- The driver ends the route.
+- The user logs off or closes the app (`deinitialize()` also stops a running recording).
+- The app crashes or is terminated (hook into the crash handler / lifecycle where possible).
+- Optional time constraint, e.g. stop automatically after 22:00 local time.
+
+Confirm with me: all stop points, and whether a time cutoff is wanted.
+
+## 5. Log metadata
+
+Required: for EACH delivery, send exactly ONE metadata object via `logMetadata`, independent of the outcome. Successful, failed, rejected, delivered to a neighbor or parcel locker: every delivery attempt produces one event, with the outcome in `delivery_state`.
+
+When to send it:
+- Trigger on the moment the driver finalizes the delivery in the app: the final scan, the confirm button, the signature or photo capture completing, or the failure / reject reason being selected.
+- Find the single place in code where a delivery reaches its final state (e.g. the handler that marks the stop or task as done/failed). Hook in there, not in UI buttons that can be pressed several times.
+- One event per delivery attempt: do not send on intermediate steps (opening the stop, starting a scan) and do not send twice if the driver edits the result. If a stop holds several parcels for the same address delivered together, send one event for the stop and list the parcel IDs.
+- A later second attempt at the same address (e.g. after a failed first try) is a new delivery attempt and gets its own event.
+- Pickups follow the same rule with `eventType` = `pickup`.
+
+IMPORTANT, neighbor deliveries: every delivery handed to a neighbor (or any other address than the recipient's, e.g. a nearby shop) MUST be identifiable in the metadata. Set `extra.delivered_to_neighbor` = `true` (otherwise `false`) and, if the app knows it, `extra.neighbor_address` / `extra.neighbor_address_id`. Reason: the courier stopped at a different building than the recipient's address, so truemetrics must be able to filter these events out. Otherwise a wrong parking place or entrance gets linked to the recipient's address_id. If the app only has a status code for this, still send the explicit flag and keep the raw code in `delivery_state`.
+
+Send it right away, also when offline. Do not check connectivity. The SDK buffers everything on the device and uploads when a good connection is available. If logging can only happen later, put the actual event timestamp in `eventTime`.
+
+Confirm with me: the exact function(s) where a delivery reaches its final state, and how multi-parcel stops are modeled.
+
+Use the standard metadata fields (native Android and Flutter: `StandardMetadata`; Expo and React Native: a string map with the wire keys in brackets). All values are strings.
+
+| Field (wire key) | Content |
+| --- | --- |
+| eventTime (`t_event`) | ISO 8601 timestamp of the driver interaction. |
+| eventType (`type_event`) | `delivery` or `pickup`. |
+| deliveryId (`id_delivery_external`) | Delivery ID. |
+| tourId (`id_tour`) | Route / tour ID. |
+| waypointLatitude, waypointLongitude (`lat_waypoint_external`, `lon_waypoint_external`) | Waypoint: the street coordinate the courier is actually routed to, i.e. the point your routing system and the courier's navigation use. Typically a street projection from Google Maps or from an internal system. |
+| referenceLatitude, referenceLongitude (`lat_reference_external`, `lon_reference_external`) | Reference: where you believe the delivery is actually done, i.e. the destination building. Typically a rooftop coordinate from your address system or geocoder. |
+| address (`address_raw`) | Normalized if available, raw is fine, as one string. |
+
+Put everything else into `extra` (or as extra keys in the map):
+
+| Extra key | Content |
+| --- | --- |
+| address_id | HIGHEST PRIORITY. Stable primary identifier for the address. truemetrics returns parking places and entrances keyed by this ID. |
+| parcel_id | Parcel ID(s), comma-separated for multi-parcel stops. |
+| delivery_state | success, failed, or special (e.g. delivered to neighbor, customer not home, parcel locker), plus the raw internal code. |
+| delivered_to_neighbor | Required. `true` if handed to a neighbor or any other address than the recipient's, else `false`. Plus `neighbor_address` / `neighbor_address_id` if known. |
+| service_type | Raw internal code as-is (e.g. signature required, age check). |
+| eta_first, eta_latest | Required. First planned ETA and the most recent updated ETA, as ISO 8601 timestamps. If the app has only one ETA, send it in both. |
+| street, house_number, postal_code, city | Address parts, if the app has them separately. |
+| vehicle_type, driver_id, driver_experience, ... | Any other fields commonly used in this app's systems. |
+
+Confirm with me: the field mapping from this app's data models to the tables above.
+
+## 6. Log the planned sequence at route start
+
+Required. Exactly once per route, at the moment the route is actually started, make one dedicated `logMetadata` call for the planned sequence. It is its own event, never combined with a delivery event. Set `eventType` = `planned_sequence`, `eventTime` and `tourId` set, and in `extra` under the key `planned_sequence` the ordered list of planned stops serialized as a JSON array string, e.g. `[{"seq":1,"task_id":"T321","eta":"2026-10-15T08:12:00Z"}, ...]`. Also set `extra.stop_count`.
+
+Traceability: each planned stop needs exactly one identifier, e.g. task_id, stop_id or parcel_id, whichever the app has. Use the same key name and value in the delivery events from section 5 (add it to their `extra` if missing), so truemetrics can match each planned stop to its actual delivery event. No further IDs are needed in the sequence. Required: each planned stop must also carry its planned ETA in `eta` (ISO 8601).
+
+Size: one metadata event is uploaded as a single item and is dropped if it exceeds the SDK upload payload limit (700 KB by default). A typical route of 100 to 200 stops is around 20 to 50 KB, so one event is fine. If the serialized JSON exceeds 200 KB, split it into several `planned_sequence` events with `extra.part` (1, 2, ...) and `extra.part_count`.
+
+Do not send it again on re-plans, app restarts or re-logins for the same route: persist a sent flag per tourId.
+
+## 7. Device ID for debugging
+
+Read the device ID (`getDeviceId()`, or `deviceId` from the `Initialized` status) and store it in this app's own backend or logs next to the driver/session. It identifies the phone and installation and is only used for debugging with truemetrics.
+
+## SDK API reference
+
+### Android native (Kotlin/Java)
+
+Gradle:
+    repositories { maven { url = uri("https://github.com/TRUE-Metrics-io/truemetrics_android_SDK_p_maven/raw/") } }
+    dependencies { implementation("io.truemetrics:truemetricssdk:<latest version from that repo's README>") }
+
+| Purpose | Call |
+| --- | --- |
+| Init | `TruemetricsSdk.init(context, SdkConfiguration.Builder(apiKey).foregroundNotificationFactory(factory).build())` |
+| Instance | `TruemetricsSdk.getInstance()` |
+| Status | `sdkStatus` (StateFlow) or `observeSdkStatus()`: `Uninitialized`, `Initializing`, `Initialized(deviceId)`, `RecordingInProgress`, `RecordingStopped`, `DelayedStart`, `TrafficLimitReached`, `ReadingsDatabaseFull`, `AskForPermissions(permissions)`, `Error(errorCode, message)` |
+| Is initialized | no direct call: check `sdkStatus.value` is not `Uninitialized` / `Initializing` / `Error` |
+| Start / stop | `startRecording()`, `stopRecording()` |
+| Recording state | `isRecordingInProgress()`, `isRecordingStopped()`, `getRecordingStartTime()` |
+| Metadata | `logMetadata(StandardMetadata(eventTime, eventType, deliveryId, tourId, waypointLatitude, waypointLongitude, referenceLatitude, referenceLongitude, address, extra))` (the `Map` overload is deprecated) |
+| Device ID | `getDeviceId()` |
+| Teardown | `deinitialize()` |
+
+### Flutter (`truemetrics_flutter_sdk`, class `TruemetricsFlutterSdk`)
+
+`initialize(TruemetricsConfig)`, `isInitialized()`, `startRecording()`, `stopRecording()`, `isRecordingInProgress()`, `logStandardMetadata(StandardMetadata)`, `getDeviceId()`, `deInitialize()`. All return Futures.
+
+### Expo (`expo-truemetrics-sdk`, object `ExpoTruemetricsSdk`)
+
+`initialize({ apiKey, debug })`, `isInitialized()`, `startRecording()`, `stopRecording()`, `isRecordingInProgress()`, `logMetadata(Record<string, string>)`, `deinitialize()`, `addListener(eventName, listener)` for status events. Use the wire keys from section 5.
+
+### Bare React Native (`NativeModules.TruemetricsSdkModule`)
+
+`initializeSdk(apiKey)`, `isInitialized()`, `startRecording()`, `stopRecording()`, `isRecordingInProgress()`, `logMetadata(object)`, status via `new NativeEventEmitter(NativeModules.TruemetricsSdkModule)`. Copy the native module from the React Native demo app's `android` folder. Use the wire keys from section 5.
+
+## Done when
+
+- Correct SDK variant added, iOS calls guarded as no-ops.
+- All required permissions present in the merged manifest and requested at runtime before recording.
+- Init on login with API key, explicit start, deinit on logout, status observed and logged.
+- Start and stop recording at the confirmed triggers, guarded by `isRecordingInProgress()`.
+- Exactly one metadata event per delivery attempt, successful or failed, with `eta_first` and `eta_latest`, and one planned sequence event with an `eta` per stop at route start.
+- Device ID stored in our systems.
+- Give me a short summary of every file changed and a test plan: developer test on a real Android device, then a system test with about 3 hours of recording under field-like conditions.
+````
