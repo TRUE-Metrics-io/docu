@@ -21,7 +21,7 @@ You are integrating the truemetrics telemetry SDK into this courier/driver app. 
 
 Work in this order:
 1. Analyze the codebase: language and framework, login/logout, route start/end, navigation start, delivery confirmation (success/fail), app startup and session restore, and the data models for routes, stops, deliveries, parcels and addresses.
-2. For EACH integration point below, propose the exact file, function and line, explain why, and ASK ME TO CONFIRM before writing code. Ask all questions in one batch where possible.
+2. For EACH integration point below, propose the exact file, function and line, explain why, and ASK ME TO CONFIRM before writing code. Ask all questions in one batch where possible. You may add the SDK repository and dependency before asking, to read the SDK's manifest and API; change nothing else before I confirm, and include this change in your questions.
 3. Implement only what I confirmed. Keep changes minimal and isolated (ideally one wrapper class, e.g. `TruemetricsTracker`).
 4. Use the SDK API reference at the end of this prompt. If a signature differs in the installed version, the installed version wins. For metadata event names, keys and triggers, follow this prompt where other truemetrics documentation pages differ.
 
@@ -35,6 +35,8 @@ Detect the app's language and framework, then pick the matching SDK and tell me 
 - Android native (Kotlin/Java): `io.truemetrics:truemetricssdk` from the truemetrics Maven repo, version 1.6.3 or newer.
 - Flutter: package `truemetrics_flutter_sdk`, version 0.0.13 or newer (`^0.0.13`). Older versions start recording on init by themselves; if dependency resolution fails, tell me instead of using one. Leave `delayAutoStartRecording` out of the config, even where the plugin's README or example sets it.
 - Any other framework (e.g. React Native, Expo): this prompt does not cover it. Stop and tell me to contact truemetrics.
+
+Both variants: the native SDK is built with Kotlin 2.2, so the app's Kotlin Gradle plugin (`org.jetbrains.kotlin.android`) must be 2.1 or newer; otherwise the build fails with "Module was compiled with an incompatible version of Kotlin". If it is older, tell me before upgrading it.
 
 Flutter 0.0.13 wraps native SDK 1.6.0, which has no `FOREGROUND_SERVICE_START_REFUSED`: its `initialize` can throw when the app is in the background. Catch any exception (not only `PlatformException`), call `initialize` again on the next `AppLifecycleState.resumed`, and never initialize from a background isolate (FCM background handler, WorkManager). Tell me about this when you report the chosen variant.
 
@@ -52,7 +54,7 @@ Read it for the installed SDK version: the `AndroidManifest.xml` inside the `tru
 Steps:
 - Check the app's config files: `app/src/main/AndroidManifest.xml` (native), `android/app/src/main/AndroidManifest.xml` (Flutter), plus Gradle files (minSdk, repositories, dependency).
 - Add the SDK repository and dependency if missing (minSdk 24). Flutter: add only the Maven repository, to `allprojects { repositories }` in `android/build.gradle(.kts)`, or to `dependencyResolutionManagement { repositories }` in `android/settings.gradle(.kts)` if the app declares repositories there; the plugin pins the native SDK version, so do not add the native dependency.
-- Request the runtime permissions BEFORE recording starts, ideally right after login, and on app start for users who are already logged in: every runtime (dangerous) permission found in the SDK manifest, location first and background location after it. Reuse the app's existing permission flow if it has one.
+- Request the runtime permissions BEFORE recording starts, ideally right after login, and on app start for users who are already logged in: every runtime (dangerous) permission found in the SDK manifest, location first and background location after it. Before the first location permission request, show an in-app dialog stating that the app collects location data in the background, also when the app is closed or not in use, and what it is used for (Google Play requires this prominent disclosure). Reuse the app's existing permission flow if it has one.
 - Handle the SDK status `AskForPermissions(permissions)` (Flutter: `onPermissionsRequired`) by requesting the listed permissions.
 - Exclude the app from battery optimization if the app's existing flow supports it.
 
@@ -90,12 +92,12 @@ Confirm with me: which trigger this app supports and where it lives in code.
 Call `stopRecording()` when:
 - The driver ends the route. If the app has no explicit route end, propose one (e.g. the last stop reaching a final state).
 - The driver ends the shift through an explicit action in the app, if there is one. On logout, `deinitialize()` (section 2) stops the recording; no separate stop is needed.
-- On app start (after init) or when the app returns to the foreground, if the app's data shows the route is already finished or belongs to a previous day.
-- Recommended: a daily time cutoff, e.g. stop automatically at 22:00 local time (a scheduled job, plus the same check on app start). The foreground service keeps the app process alive, so a route that is never ended would otherwise keep recording overnight. After the cutoff, start again that day only on an explicit route start.
+- On app start (after init) or when the app returns to the foreground, if the app's data shows the route is already finished or belongs to a previous day (once per finished route, not on every foreground).
+- Recommended: a daily time cutoff, e.g. stop automatically at 22:00 local time (a scheduled job, plus the same check on app start; Flutter: a timer while the app runs plus the checks on app start and resume, no background isolate). The foreground service keeps the app process alive, so a route that is never ended would otherwise keep recording overnight. After the cutoff, start again that day only on an explicit route start.
 
 Call `stopRecording()` unconditionally, without an `isRecordingInProgress()` check: right after init that check is still false. Native: a stop issued after `init()` but before the SDK is ready is queued; a stop issued before `init()` is discarded.
 
-Do NOT stop recording just because a crash handler or a lifecycle callback fired (`onDestroy`, `onTaskRemoved`, `onTerminate`, Flutter `AppLifecycleState` changes or `dispose()`, app swiped away from recents, app moved to the background). They fire on screen rotation, on swipe-away and when the system destroys the app's screens in the background. The only stop tied to the app lifecycle is the finished-route check above. A recording that was started and not stopped resumes on the next init (section 2).
+Do NOT stop recording just because a crash handler or a lifecycle callback fired (`onDestroy`, `onTaskRemoved`, `onTerminate`, Flutter `AppLifecycleState` changes or `dispose()`, app swiped away from recents, app moved to the background). They fire on screen rotation, on swipe-away and when the system destroys the app's screens in the background. The only stops tied to the app lifecycle are the finished-route and cutoff checks above. A recording that was started and not stopped resumes on the next init (section 2).
 
 Confirm with me: all stop points, and the cutoff time (or that I decline the cutoff).
 
@@ -110,7 +112,7 @@ When to send it:
 - A later second attempt at the same address (e.g. after a failed first try) is a new delivery attempt and gets its own event.
 - Pickups follow the same rule with `eventType` = `pickup`.
 
-IMPORTANT, neighbor deliveries: every delivery handed to a neighbor (or any other address than the recipient's, e.g. a nearby shop) MUST be identifiable in the metadata. Set `extra.delivered_to_neighbor` = `true` (otherwise `false`) and, if the app knows it, `extra.neighbor_address` / `extra.neighbor_address_id`. Reason: the courier stopped at a different building than the recipient's address, so truemetrics must be able to filter these events out. Otherwise a wrong parking place or entrance gets linked to the recipient's address_id. If the app only has a status code for this, still send the explicit flag and keep the raw code in `delivery_state`.
+IMPORTANT, neighbor deliveries: every delivery handed to a neighbor (or any other address than the recipient's, e.g. a nearby shop) MUST be identifiable in the metadata. Set `extra.delivered_to_neighbor` = `true` (otherwise `false`) and, if the app knows it, `extra.neighbor_address` (the street address, not the neighbor's name) / `extra.neighbor_address_id`. Reason: the courier stopped at a different building than the recipient's address, so truemetrics must be able to filter these events out. Otherwise a wrong parking place or entrance gets linked to the recipient's address_id. If the app only has a status code for this, still send the explicit flag and keep the raw code in `delivery_state`.
 
 Send it right away, also when offline. Do not check connectivity. The SDK buffers everything on the device and uploads when a good connection is available. Log at the moment of the driver's action, from the code that first saves it on the device, never from a server-sync callback: for some accounts the SDK uploads only the sensor data around the time `logMetadata` is called. If logging can only happen later, put the actual event timestamp in `eventTime`.
 
