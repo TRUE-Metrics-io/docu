@@ -8,7 +8,7 @@ description: 'Copy-paste prompt that lets a coding agent integrate the truemetri
 
 Paste the prompt below into your coding agent (Claude Code, Cursor, Copilot or similar) with your courier app repository open. The agent analyzes your app, proposes where each truemetrics call goes, asks you to confirm every integration point, and then implements it.
 
-Before you start, request your API key from truemetrics by emailing [jan@truemetrics.io](mailto:jan@truemetrics.io). The prompt references the exact SDK functions for Android native, Flutter, Expo and React Native.
+Before you start, request your API key from truemetrics by emailing [jan@truemetrics.io](mailto:jan@truemetrics.io). The prompt references the exact SDK functions for Android native and Flutter.
 
 ## The prompt
 
@@ -20,10 +20,10 @@ Copy everything inside the block.
 You are integrating the truemetrics telemetry SDK into this courier/driver app. truemetrics records device sensor data during delivery tours and uses it to detect stops, parking places and building entrances, and to measure stop times. Data collection, buffering and upload are handled by the SDK itself. The app only needs to: initialize the SDK, start/stop recording, and log metadata.
 
 Work in this order:
-1. Analyze the codebase: language and framework, login/logout, route start/end, navigation start, delivery confirmation (success/fail), app lifecycle and crash handling, and the data models for routes, stops, deliveries, parcels and addresses.
+1. Analyze the codebase: language and framework, login/logout, route start/end, navigation start, delivery confirmation (success/fail), app startup and session restore, and the data models for routes, stops, deliveries, parcels and addresses.
 2. For EACH integration point below, propose the exact file, function and line, explain why, and ASK ME TO CONFIRM before writing code. Ask all questions in one batch where possible.
 3. Implement only what I confirmed. Keep changes minimal and isolated (ideally one wrapper class, e.g. `TruemetricsTracker`).
-4. Use the SDK API reference at the end of this prompt. If a signature differs in the installed version, the installed version wins.
+4. Use the SDK API reference at the end of this prompt. If a signature differs in the installed version, the installed version wins. For metadata event names, keys and triggers, follow this prompt where other truemetrics documentation pages differ.
 
 ## API key
 
@@ -32,84 +32,93 @@ The API key is issued by truemetrics. If I have not given you one, stop and tell
 ## 0. Choose the SDK variant
 
 Detect the app's language and framework, then pick the matching SDK and tell me which one you chose:
-- Android native (Kotlin/Java): `io.truemetrics:truemetricssdk` from the truemetrics Maven repo.
-- Flutter: package `truemetrics_flutter_sdk`.
-- React Native with Expo: package `expo-truemetrics-sdk`.
-- Bare React Native: native module `TruemetricsSdkModule` as in the React Native demo app.
+- Android native (Kotlin/Java): `io.truemetrics:truemetricssdk` from the truemetrics Maven repo, version 1.6.3 or newer.
+- Flutter: package `truemetrics_flutter_sdk`, version 0.0.13 or newer (`^0.0.13`). Older versions start recording on init by themselves; if dependency resolution fails, tell me instead of using one. Leave `delayAutoStartRecording` out of the config, even where the plugin's README or example sets it.
+- Any other framework (e.g. React Native, Expo): this prompt does not cover it. Stop and tell me to contact truemetrics.
 
-Reference implementations (public GitHub, org TRUE-Metrics-io): `truemetrics_android_demo_app_p` (Kotlin), `truemetrics_flutter_p` (Flutter plugin + example), `truemetrics_android_demo_expo_app_p` and `truemetrics_expo_p` (Expo), `truemetrics_android_demo_react_app_p` (React Native).
+Flutter 0.0.13 wraps native SDK 1.6.0, which has no `FOREGROUND_SERVICE_START_REFUSED`: its `initialize` can throw when the app is in the background. Catch any exception (not only `PlatformException`), call `initialize` again on the next `AppLifecycleState.resumed`, and never initialize from a background isolate (FCM background handler, WorkManager). Tell me about this when you report the chosen variant.
 
-iOS: truemetrics does NOT record on iPhone/iOS devices. In cross-platform apps, guard every truemetrics call with a platform check (`Platform.OS === 'android'` in React Native, `Platform.isAndroid` in Flutter) so it only runs on Android and is a safe no-op on iOS. Do not add iOS permissions or background modes for truemetrics.
+Reference implementations (public GitHub, org TRUE-Metrics-io): `truemetrics_android_demo_app_p` (Kotlin), `truemetrics_flutter_p` (Flutter plugin + example).
+
+iOS: truemetrics does NOT record on iPhone/iOS devices. In Flutter apps, guard every truemetrics call with `Platform.isAndroid` so it only runs on Android and is a safe no-op on iOS. Do not add iOS permissions or background modes for truemetrics.
 
 Confirm with me: the detected framework and the SDK variant.
 
 ## 1. Permissions and configuration
 
 The single source of truth for permissions is the SDK's own `AndroidManifest.xml`. Do not rely on a hard-coded list: permissions change between SDK versions.
-Read it for the installed SDK version: the `AndroidManifest.xml` inside the `truemetricssdk` AAR (Maven repo, Gradle cache, or the Flutter / Expo plugin's `android` folder), or the manifest merger report after a build (`app/build/outputs/logs/manifest-merger-*-report.txt`). List every `uses-permission` and `service` it declares. They merge into the app automatically: make sure the app's config removes none of them (`tools:node="remove"`). Re-check this whenever the SDK version is updated.
+Read it for the installed SDK version: the `AndroidManifest.xml` inside the `truemetricssdk` AAR (Maven repo or Gradle cache), or the manifest merger report after a build (native: `app/build/outputs/logs/manifest-merger-*-report.txt`; Flutter: `build/app/outputs/logs/manifest-merger-*-report.txt`). List every `uses-permission` and `service` it declares. They merge into the app automatically: make sure the app's config removes none of them (`tools:node="remove"`). Re-check this whenever the SDK version is updated.
 
 Steps:
-- Check the app's config files: `app/src/main/AndroidManifest.xml` (native), `android/app/src/main/AndroidManifest.xml` (Flutter, bare React Native), `app.json` / `app.config.js` plugins and `android.permissions` (Expo), plus Gradle files (minSdk, repositories, dependency).
-- Add the SDK dependency and repository if missing.
-- Request the runtime permissions BEFORE recording starts, ideally right after login: every runtime (dangerous) permission found in the SDK manifest, location first and background location after it. Reuse the app's existing permission flow if it has one.
-- Handle the SDK status `AskForPermissions(permissions)` by requesting the listed permissions.
+- Check the app's config files: `app/src/main/AndroidManifest.xml` (native), `android/app/src/main/AndroidManifest.xml` (Flutter), plus Gradle files (minSdk, repositories, dependency).
+- Add the SDK repository and dependency if missing (minSdk 24). Flutter: add only the Maven repository, to `allprojects { repositories }` in `android/build.gradle(.kts)`, or to `dependencyResolutionManagement { repositories }` in `android/settings.gradle(.kts)` if the app declares repositories there; the plugin pins the native SDK version, so do not add the native dependency.
+- Request the runtime permissions BEFORE recording starts, ideally right after login, and on app start for users who are already logged in: every runtime (dangerous) permission found in the SDK manifest, location first and background location after it. Reuse the app's existing permission flow if it has one.
+- Handle the SDK status `AskForPermissions(permissions)` (Flutter: `onPermissionsRequired`) by requesting the listed permissions.
 - Exclude the app from battery optimization if the app's existing flow supports it.
 
 Show me the permission and config diff before applying it.
 
 ## 2. Initialization and deinitialization
 
-- Initialize the SDK once per session during the login procedure, right after a successful login, while the app is in the foreground. It needs the API key and, on native Android, a foreground notification factory.
-- Use explicit start: recording must only begin when `startRecording()` is called (this is the default since SDK 1.6.0; do not enable auto-start).
-- Before init, check that the SDK is not already initialized.
-- Deinitialize on logout.
-- Observe the SDK status and log errors. Do not treat every `Error` as fatal: `FOREGROUND_SERVICE_START_REFUSED` recovers on its own when the app returns to the foreground.
-- Optional: assert or log an error if the SDK is still not initialized 10 seconds after init was called.
+- Initialize the SDK right after a successful login. It needs the API key; on native Android a foreground notification factory is optional (to customize the notification).
+- Also initialize it on every app start while a user is already logged in (native: `Application.onCreate()`, in the main process only; Flutter: at app startup, once the stored session is restored). Native: do not add a foreground check: `onCreate()` can run in the background, and on 1.6.3+ the SDK may then report `FOREGROUND_SERVICE_START_REFUSED` and finishes starting once the app's UI is shown. Flutter: see section 0. A recording that was started and not stopped survives a crash, an OS kill, an app update or a reboot, and resumes on the next init. Without that init, recording stays off and metadata is lost until the next login.
+- `init()` starts the SDK's foreground service. Its notification stays visible until `deinitialize()`, also while no recording is running. Tell me about this.
+- Use explicit start: recording must only begin when `startRecording()` is called (this is the default since SDK 1.6.0; do not enable auto-start via `delayAutoStartRecording`).
+- Call init from one place in the wrapper: once per process, and again after `deinitialize()` has returned (Flutter: after awaiting `deInitialize()`). Track this with the wrapper's own flag, set only when init did not throw. The SDK status and Flutter's `isInitialized()` are not reliable for this check.
+- Deinitialize on logout only, not at route end: uploading of the remaining data stops at `deinitialize()` and continues only after the next init. Native: call `deinitialize()` off the main thread, it can block for a few seconds.
+- Observe the SDK status and log errors. `FOREGROUND_SERVICE_START_REFUSED` is not fatal (see above).
+- Do not add a client-side init timeout or assert: offline and without a cached configuration (first init after install or after `deinitialize()`), the SDK stays `Initializing` and keeps retrying.
 
-Confirm with me: where login completes, and where logout happens.
+Confirm with me: where login completes, where an existing session is restored on app start, and where logout happens.
 
 ## 3. Start recording
 
-`startRecording()` starts the sensor recording and the foreground service notification. It should run when the courier leaves the depot. Preferred triggers, in this order:
+`startRecording()` starts the sensor recording. It should run when the courier leaves the depot. Preferred triggers, in this order:
 1. Driver starts the route (preferred).
 2. Navigation is started for the first time after login.
 3. After the first delivery is completed (acceptable if missing the first stop is OK).
 4. During login (fallback only: records extra data, e.g. while the vehicle is being loaded).
 
-Check `isRecordingInProgress()` before starting to avoid duplicate starts.
+Check `isRecordingInProgress()` before starting to avoid duplicate starts. Do not call `startRecording()` on a plain app start: a started recording resumes on init by itself (section 2). Flutter (native SDK 1.6.0): call `startRecording()` and `stopRecording()` only once the SDK is ready (section 5), never straight after `initialize`. After a login, if this user's route is already started and not finished (e.g. after a forced re-login mid-route), call `startRecording()` again: the logout's `deinitialize()` stopped it.
 
-IMPORTANT, no high-frequency start/stop: the SDK is not designed to be started and stopped often. Start recording once at the beginning of the route and stop it once when the route is finished or the user logs off. In between, leave it running: do NOT stop and restart per stop, per delivery, per screen, or when the app goes to the background. The only accepted exception is a courier break that must not be recorded (e.g. a lunch break the app knows about): stop at break start and start again at break end.
+IMPORTANT, no high-frequency start/stop: the SDK is not designed to be started and stopped often. Start recording once at the beginning of the route and stop it once when the route is finished (logout stops it through `deinitialize()`). In between, leave it running: do NOT stop and restart per stop, per delivery, per screen, or when the app goes to the background. The only accepted exception is a courier break that must not be recorded (e.g. a lunch break the app knows about): stop at break start and start again at break end.
 
 Confirm with me: which trigger this app supports and where it lives in code.
 
 ## 4. Stop recording
 
-Call `stopRecording()` (stops recording and the foreground service) when:
-- The driver ends the route.
-- The user logs off or closes the app (`deinitialize()` also stops a running recording).
-- The app crashes or is terminated (hook into the crash handler / lifecycle where possible).
-- Optional time constraint, e.g. stop automatically after 22:00 local time.
+Call `stopRecording()` when:
+- The driver ends the route. If the app has no explicit route end, propose one (e.g. the last stop reaching a final state).
+- The driver ends the shift through an explicit action in the app, if there is one. On logout, `deinitialize()` (section 2) stops the recording; no separate stop is needed.
+- On app start (after init) or when the app returns to the foreground, if the app's data shows the route is already finished or belongs to a previous day.
+- Recommended: a daily time cutoff, e.g. stop automatically at 22:00 local time (a scheduled job, plus the same check on app start). The foreground service keeps the app process alive, so a route that is never ended would otherwise keep recording overnight. After the cutoff, start again that day only on an explicit route start.
 
-Confirm with me: all stop points, and whether a time cutoff is wanted.
+Call `stopRecording()` unconditionally, without an `isRecordingInProgress()` check: right after init that check is still false. Native: a stop issued after `init()` but before the SDK is ready is queued; a stop issued before `init()` is discarded.
+
+Do NOT stop recording just because a crash handler or a lifecycle callback fired (`onDestroy`, `onTaskRemoved`, `onTerminate`, Flutter `AppLifecycleState` changes or `dispose()`, app swiped away from recents, app moved to the background). They fire on screen rotation, on swipe-away and when the system destroys the app's screens in the background. The only stop tied to the app lifecycle is the finished-route check above. A recording that was started and not stopped resumes on the next init (section 2).
+
+Confirm with me: all stop points, and the cutoff time (or that I decline the cutoff).
 
 ## 5. Log metadata
 
-Required: for EACH delivery, send exactly ONE metadata object via `logMetadata`, independent of the outcome. Successful, failed, rejected, delivered to a neighbor or parcel locker: every delivery attempt produces one event, with the outcome in `delivery_state`.
+Required: for EACH delivery, send exactly ONE metadata object via `logMetadata` (Flutter: `logStandardMetadata`), independent of the outcome. Successful, failed, rejected, delivered to a neighbor or parcel locker: every delivery attempt produces one event, with the outcome in `delivery_state`.
 
 When to send it:
 - Trigger on the moment the driver finalizes the delivery in the app: the final scan, the confirm button, the signature or photo capture completing, or the failure / reject reason being selected.
 - Find the single place in code where a delivery reaches its final state (e.g. the handler that marks the stop or task as done/failed). Hook in there, not in UI buttons that can be pressed several times.
-- One event per delivery attempt: do not send on intermediate steps (opening the stop, starting a scan) and do not send twice if the driver edits the result. If a stop holds several parcels for the same address delivered together, send one event for the stop and list the parcel IDs.
+- One event per delivery attempt: do not send on intermediate steps (opening the stop, starting a scan) and do not send twice if the driver edits the result. If this app's data cannot tell an edit from a new attempt, ask me. If a stop holds several parcels for the same address delivered together, send one event for the stop and list the parcel IDs.
 - A later second attempt at the same address (e.g. after a failed first try) is a new delivery attempt and gets its own event.
 - Pickups follow the same rule with `eventType` = `pickup`.
 
 IMPORTANT, neighbor deliveries: every delivery handed to a neighbor (or any other address than the recipient's, e.g. a nearby shop) MUST be identifiable in the metadata. Set `extra.delivered_to_neighbor` = `true` (otherwise `false`) and, if the app knows it, `extra.neighbor_address` / `extra.neighbor_address_id`. Reason: the courier stopped at a different building than the recipient's address, so truemetrics must be able to filter these events out. Otherwise a wrong parking place or entrance gets linked to the recipient's address_id. If the app only has a status code for this, still send the explicit flag and keep the raw code in `delivery_state`.
 
-Send it right away, also when offline. Do not check connectivity. The SDK buffers everything on the device and uploads when a good connection is available. If logging can only happen later, put the actual event timestamp in `eventTime`.
+Send it right away, also when offline. Do not check connectivity. The SDK buffers everything on the device and uploads when a good connection is available. Log at the moment of the driver's action, from the code that first saves it on the device, never from a server-sync callback: for some accounts the SDK uploads only the sensor data around the time `logMetadata` is called. If logging can only happen later, put the actual event timestamp in `eventTime`.
+
+The SDK drops metadata that is logged before it is ready, e.g. right after init or on an app start before init ran. The SDK is ready from the first `Initialized`, `RecordingInProgress`, `RecordingStopped`, `DelayedStart`, `TrafficLimitReached`, `ReadingsDatabaseFull` or `AskForPermissions` status after each init (Flutter: also any `onPermissionsRequired` call, even with an empty list) until `deinitialize()`, also through later errors. In the wrapper, build each event, `eventTime` included, when the driver acts. While the SDK is not ready or the queue is not empty, append the event to a queue kept in local storage (the wrapper's own file or preferences, so no database migration is needed). Once the SDK is ready, send the queued events in order, then log directly. Keep only the newest 100 events in the queue: it is sent in one burst, and metadata logged together is uploaded as one piece (section 6). Keep the queue across logout; it is sent after the next init.
 
 Confirm with me: the exact function(s) where a delivery reaches its final state, and how multi-parcel stops are modeled.
 
-Use the standard metadata fields (native Android and Flutter: `StandardMetadata`; Expo and React Native: a string map with the wire keys in brackets). All values are strings.
+Use the standard metadata fields of `StandardMetadata` (wire keys in brackets). All values are strings.
 
 | Field (wire key) | Content |
 | --- | --- |
@@ -121,7 +130,7 @@ Use the standard metadata fields (native Android and Flutter: `StandardMetadata`
 | referenceLatitude, referenceLongitude (`lat_reference_external`, `lon_reference_external`) | Reference: where you believe the delivery is actually done, i.e. the destination building. Typically a rooftop coordinate from your address system or geocoder. |
 | address (`address_raw`) | Normalized if available, raw is fine, as one string. |
 
-Put everything else into `extra` (or as extra keys in the map):
+Put everything else into `extra`:
 
 | Extra key | Content |
 | --- | --- |
@@ -130,65 +139,58 @@ Put everything else into `extra` (or as extra keys in the map):
 | delivery_state | success, failed, or special (e.g. delivered to neighbor, customer not home, parcel locker), plus the raw internal code. |
 | delivered_to_neighbor | Required. `true` if handed to a neighbor or any other address than the recipient's, else `false`. Plus `neighbor_address` / `neighbor_address_id` if known. |
 | service_type | Raw internal code as-is (e.g. signature required, age check). |
-| eta_first, eta_latest | Required. First planned ETA and the most recent updated ETA, as ISO 8601 timestamps. If the app has only one ETA, send it in both. |
+| eta_first, eta_latest | Required. First planned ETA and the most recent updated ETA, as ISO 8601 timestamps. If the app has only one ETA, send it in both. If it has none, tell me; do not compute one. |
 | street, house_number, postal_code, city | Address parts, if the app has them separately. |
-| vehicle_type, driver_id, driver_experience, ... | Any other fields commonly used in this app's systems. |
+| vehicle_type, driver_id, driver_experience, ... | Any other fields commonly used in this app's systems. No recipient names, phone numbers or free-text notes. |
 
 Confirm with me: the field mapping from this app's data models to the tables above.
 
 ## 6. Log the planned sequence at route start
 
-Required. Exactly once per route, at the moment the route is actually started, make one dedicated `logMetadata` call for the planned sequence. It is its own event, never combined with a delivery event. Set `eventType` = `planned_sequence`, `eventTime` and `tourId` set, and in `extra` under the key `planned_sequence` the ordered list of planned stops serialized as a JSON array string, e.g. `[{"seq":1,"task_id":"T321","eta":"2026-10-15T08:12:00Z"}, ...]`. Also set `extra.stop_count`.
+Required. Exactly once per route, at the moment the route is actually started, make one dedicated `logMetadata` call for the planned sequence. It is its own event, never combined with a delivery event. Set `eventType` = `planned_sequence`, `eventTime` and `tourId` set, and in `extra` under the key `planned_sequence` the ordered list of planned stops serialized as a JSON array string, e.g. `[{"seq":1,"task_id":"T321","eta":"2026-10-15T08:12:00Z"}, ...]`. Also set `extra.stop_count`. Leave the other standard fields empty.
 
 Traceability: each planned stop needs exactly one identifier, e.g. task_id, stop_id or parcel_id, whichever the app has. Use the same key name and value in the delivery events from section 5 (add it to their `extra` if missing), so truemetrics can match each planned stop to its actual delivery event. No further IDs are needed in the sequence. Required: each planned stop must also carry its planned ETA in `eta` (ISO 8601).
 
-Size: one metadata event is uploaded as a single item and is dropped if it exceeds the SDK upload payload limit (700 KB by default). A typical route of 100 to 200 stops is around 20 to 50 KB, so one event is fine. If the serialized JSON exceeds 200 KB, split it into several `planned_sequence` events with `extra.part` (1, 2, ...) and `extra.part_count`.
+Size: metadata logged close together is uploaded as one piece, the upload limit is set per account and can be as low as 200 KB, and a piece above the limit is never uploaded. Keep the `planned_sequence` event under 50 KB: per stop only the identifier, `seq` and `eta`. A typical route of 100 to 200 stops is far below that. If it would still be larger, tell me; do not split it into several events.
 
-Do not send it again on re-plans, app restarts or re-logins for the same route: persist a sent flag per tourId.
+Do not send it again on re-plans, app restarts or re-logins for the same route: persist a sent flag per tourId, set in the same step that logs or queues the event (section 5).
 
 ## 7. Device ID for debugging
 
-Read the device ID (`getDeviceId()`, or `deviceId` from the `Initialized` status) and store it in this app's own backend or logs next to the driver/session. It identifies the phone and installation and is only used for debugging with truemetrics.
+After each init, take `deviceId` from the first `Initialized` or `RecordingInProgress` status (Flutter: from that `onStateChange` event), or call `getDeviceId()` once the SDK is ready (section 5), and store it in this app's own backend or logs next to the driver/session. It identifies the phone and installation, changes periodically, and is only used for debugging with truemetrics.
 
 ## SDK API reference
 
 ### Android native (Kotlin/Java)
 
 Gradle:
-    repositories { maven { url = uri("https://github.com/TRUE-Metrics-io/truemetrics_android_SDK_p_maven/raw/") } }
-    dependencies { implementation("io.truemetrics:truemetricssdk:<latest version from that repo's README>") }
+    repositories { maven { url = uri("https://github.com/TRUE-Metrics-io/truemetrics_android_SDK_p_maven/raw/main") } }
+    dependencies { implementation("io.truemetrics:truemetricssdk:<1.6.3 or newer, latest in io/truemetrics/truemetricssdk/maven-metadata.xml of that repo>") }
 
 | Purpose | Call |
 | --- | --- |
-| Init | `TruemetricsSdk.init(context, SdkConfiguration.Builder(apiKey).foregroundNotificationFactory(factory).build())` |
+| Init | `TruemetricsSdk.init(context, SdkConfiguration.Builder(apiKey).build())`, optionally `.foregroundNotificationFactory(factory)` on the builder |
 | Instance | `TruemetricsSdk.getInstance()` |
-| Status | `sdkStatus` (StateFlow) or `observeSdkStatus()`: `Uninitialized`, `Initializing`, `Initialized(deviceId)`, `RecordingInProgress`, `RecordingStopped`, `DelayedStart`, `TrafficLimitReached`, `ReadingsDatabaseFull`, `AskForPermissions(permissions)`, `Error(errorCode, message)` |
-| Is initialized | no direct call: check `sdkStatus.value` is not `Uninitialized` / `Initializing` / `Error` |
+| Status | `sdkStatus` (StateFlow) or `observeSdkStatus()`: `Uninitialized`, `Initializing`, `Initialized(deviceId)`, `RecordingInProgress(deviceId)`, `RecordingStopped`, `DelayedStart`, `TrafficLimitReached`, `ReadingsDatabaseFull`, `AskForPermissions(permissions)`, `Error(errorCode, message)`. Needs `kotlinx-coroutines` in the app; from Java, add `androidx.lifecycle:lifecycle-livedata-ktx` and use `FlowLiveDataConversions.asLiveData(sdk.getSdkStatus())` |
+| Is ready | no direct call: see the ready statuses in section 5 |
 | Start / stop | `startRecording()`, `stopRecording()` |
 | Recording state | `isRecordingInProgress()`, `isRecordingStopped()`, `getRecordingStartTime()` |
 | Metadata | `logMetadata(StandardMetadata(eventTime, eventType, deliveryId, tourId, waypointLatitude, waypointLongitude, referenceLatitude, referenceLongitude, address, extra))` (the `Map` overload is deprecated) |
-| Device ID | `getDeviceId()` |
-| Teardown | `deinitialize()` |
+| Device ID | `getDeviceId()` (see section 7) |
+| Teardown | `deinitialize()`, off the main thread |
 
 ### Flutter (`truemetrics_flutter_sdk`, class `TruemetricsFlutterSdk`)
 
-`initialize(TruemetricsConfig)`, `isInitialized()`, `startRecording()`, `stopRecording()`, `isRecordingInProgress()`, `logStandardMetadata(StandardMetadata)`, `getDeviceId()`, `deInitialize()`. All return Futures.
-
-### Expo (`expo-truemetrics-sdk`, object `ExpoTruemetricsSdk`)
-
-`initialize({ apiKey, debug })`, `isInitialized()`, `startRecording()`, `stopRecording()`, `isRecordingInProgress()`, `logMetadata(Record<string, string>)`, `deinitialize()`, `addListener(eventName, listener)` for status events. Use the wire keys from section 5.
-
-### Bare React Native (`NativeModules.TruemetricsSdkModule`)
-
-`initializeSdk(apiKey)`, `isInitialized()`, `startRecording()`, `stopRecording()`, `isRecordingInProgress()`, `logMetadata(object)`, status via `new NativeEventEmitter(NativeModules.TruemetricsSdkModule)`. Copy the native module from the React Native demo app's `android` folder. Use the wire keys from section 5.
+`initialize(TruemetricsConfig(config: {'apiKey': ...}))` (in try/catch, see section 0), `startRecording()`, `stopRecording()`, `isRecordingInProgress()`, `logStandardMetadata(StandardMetadata)` (all nine standard fields are required in Dart: pass `''` for unknown ones; `extra` is `Map<String, String>`), `getDeviceId()`, `deInitialize()`. All return Futures. Status, errors and permission requests: `setStatusListener(onStateChange: (event) {...}, onError: (errorCode, message) {...}, onPermissionsRequired: (permissions) {...})`. `event.state` is a `TruemetricsState` (same names as native, lower camel case) and `event.deviceId` the device ID; errors arrive only in `onError`. Each call replaces the previous listener, so call it once, in the wrapper.
 
 ## Done when
 
 - Correct SDK variant added, iOS calls guarded as no-ops.
 - All required permissions present in the merged manifest and requested at runtime before recording.
-- Init on login with API key, explicit start, deinit on logout, status observed and logged.
-- Start and stop recording at the confirmed triggers, guarded by `isRecordingInProgress()`.
-- Exactly one metadata event per delivery attempt, successful or failed, with `eta_first` and `eta_latest`, and one planned sequence event with an `eta` per stop at route start.
+- Init on login and on every app start with a logged-in user, API key, explicit start, deinit on logout, status observed and logged.
+- Start and stop recording at the confirmed triggers: start guarded by `isRecordingInProgress()`, stop unconditional and after init. No stop from crash handlers or lifecycle callbacks.
+- Exactly one metadata event per delivery attempt, successful or failed, with `delivered_to_neighbor`, `eta_first`, `eta_latest` and the stop identifier shared with the planned sequence; one planned sequence event with an `eta` per stop at route start. Metadata queued in local storage until the SDK is ready.
 - Device ID stored in our systems.
-- Give me a short summary of every file changed and a test plan: developer test on a real Android device, then a system test with about 3 hours of recording under field-like conditions.
+- Remind me of the Google Play Console declarations this needs: background location access, and foreground service types Location and Data sync.
+- Give me a short summary of every file changed and a test plan: developer test on a real Android device (including killing the app mid-route and reopening it, an app start while offline, and logout and login mid-route), then a system test with about 3 hours of recording under field-like conditions.
 ````
