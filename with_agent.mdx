@@ -161,6 +161,111 @@ Do not send it again on re-plans, app restarts or re-logins for the same route: 
 
 After each init, take `deviceId` from the first `Initialized` or `RecordingInProgress` status (Flutter: from that `onStateChange` event), or call `getDeviceId()` once the SDK is ready (section 5), and store it in this app's own backend or logs next to the driver/session. It identifies the phone and installation, changes periodically, and is only used for debugging with truemetrics.
 
+## 8. Final check: test recording
+
+Finish with this test, together with me: I run it on the test device, you tell me each step and run the check. Tell me at the start that it takes about 50 to 75 minutes, most of it waiting.
+
+1. Recording (30 min): on a real Android test device that has not recorded earlier that UTC day, once the SDK reports `Initialized` (metadata logged before that is lost), start recording and keep it running for 30 minutes, ideally while moving (walking or driving), so location, gyroscope and accelerometer produce data. Finish before 00:00 UTC: the check covers one whole UTC day.
+2. Metadata: at about minutes 1, 15 and 29 of the recording, log 3 test metadata objects through the wrapper (section 5) with `eventType` = `integration_test` and, in `extra`, the same `test_run_id` (a new unique ID, e.g. a UUID) and `test_index` `1`, `2`, `3`. A temporary debug action is enough; do not ship it in the release build.
+3. Stop: stop the recording with the app's stop trigger or the debug action, not by logging out, and keep the app logged in and the device online until the check passes: the SDK uploads the end of the recording after the stop, and after a logout it uploads nothing until the next login.
+4. Check (up to 45 min): ask me for the test device's ID (section 7). Save the script below outside the repository (never commit it) and start it right after the recording stops, as `python3 check_integration.py <device ID>` (`py` instead of `python3` on Windows), with `TRUEMETRICS_API_KEY` set from where you stored the API key ("API key" above), never written into a file or a command line. It waits 20 minutes, since data arrives with the SDK's uploads, typically 10 to 20 minutes after recording (tell me this wait is expected, not an error), then checks every 5 minutes up to 45 minutes after the stop. Run it in the background and read its output when it ends; if you cannot run background commands, give me the script and the command, and ask me for its output. It needs Python 3.8 or newer and nothing else.
+
+       """Checks a test recording against GET /testresult. Start it right after the recording stops:
+           python3 check_integration.py <device ID> [YYYY-MM-DD], with the key in TRUEMETRICS_API_KEY
+       Waits 20 minutes, then checks every 5 minutes until 45 minutes after the stop.
+       Exit code: 0 passed, 1 failed, 2 the check could not run, 3 wrong key or request.
+       Needs Python 3.8 or newer, nothing else.
+       """
+
+       import datetime
+       import json
+       import os
+       import sys
+       import time
+       import urllib.error
+       import urllib.parse
+       import urllib.request
+
+       URL = "https://geodata.truemetrics.cloud/V1/testresult"
+
+
+       def utc_now():
+           return datetime.datetime.now(datetime.timezone.utc)
+
+
+       def test_objects(result):
+           """Metadata entries that carry both test fields."""
+           return sum(
+               1
+               for entry in result.get("customer_metadata") or []
+               if {"test_run_id", "test_index"} <= set(entry.get("fields") or [])
+           )
+
+
+       def summary(result, names):
+           """The given fields of a result, plus its number of test objects."""
+           shown = {name: result.get(name) for name in names}
+           shown["test_objects"] = test_objects(result)
+           return json.dumps(shown, indent=2)
+
+
+       def fetch(url, key):
+           """One request: the HTTP status (0 for no answer) and the body."""
+           request = urllib.request.Request(url, headers={"x-api-key": key})
+           try:
+               with urllib.request.urlopen(request, timeout=60) as response:
+                   return response.status, json.load(response)
+           except urllib.error.HTTPError as error:
+               return error.code, error.read().decode(errors="replace")
+           except (urllib.error.URLError, OSError, ValueError) as error:
+               return 0, str(getattr(error, "reason", error))
+
+
+       def main():
+           key = os.environ.get("TRUEMETRICS_API_KEY")
+           if len(sys.argv) not in (2, 3) or not key:
+               print("usage:", __doc__.splitlines()[1].strip(), file=sys.stderr)
+               return 3
+           device_id = sys.argv[1]
+           # The recording's UTC day, fixed before the wait.
+           day = sys.argv[2] if len(sys.argv) == 3 else utc_now().date().isoformat()
+           query = urllib.parse.urlencode({"id_device": device_id, "date": day})
+           print(f"Checking device {device_id} for {day} (UTC).", flush=True)
+
+           time.sleep(int(os.environ.get("WAIT_SECONDS", "1200")))
+           last = None
+           for check in range(1, 7):
+               if check > 1:
+                   time.sleep(300)
+               status, body = fetch(f"{URL}?{query}", key)
+               answer = f"HTTP {status}" if status else f"no answer ({body})"
+               print(f"{utc_now():%H:%M} UTC, check {check} of 6: {answer}", flush=True)
+               if status == 200:
+                   ok = body.get("status") == "ok" and body.get("config") == "device"
+                   if ok and test_objects(body) >= 3:
+                       print("PASSED", summary(body, ("counts", "recording_minutes")), sep="\n")
+                       return 0
+                   last = body
+               elif status in (400, 403):
+                   print(body)
+                   if status == 403:
+                       print("Wrong API key, or the key is not enabled for this check: ask truemetrics.")
+                   return 3
+
+           if last is not None:
+               print("FAILED", summary(last, ("status", "reasons", "config", "counts")), sep="\n")
+               return 1
+           print("The check could not run: this is not a test result. Try again later.")
+           return 2
+
+
+       if __name__ == "__main__":
+           sys.exit(main())
+
+   Exit code 0: the test passed. 1: it failed (see below); `test_objects` below 3 means the test metadata did not arrive. 2: the check could not run (rate limit or server error): that is not a test result, run it again later with `WAIT_SECONDS=0` and, as the second argument, the UTC day it printed at the start (it would otherwise check the current day). 3: the key or the request was rejected; on a `403`, tell me to ask truemetrics to enable the key for this check. A result with `config` `unavailable` (rates not checked) does not pass: report it to me.
+
+If it failed, go through every entry in `reasons` with me and suggest fixes. Few or no readings: recording did not start, a sensor permission is missing (section 1), or the app was logged out or offline after the recording. Rates below the configured frequency: the app is restricted in the background, e.g. by battery optimization. `no customer metadata`: metadata was logged before the SDK was ready, or never sent (section 5). `unknown device`: the ID is mistyped, the key is not the one the app uses, or the SDK never initialized on that device. To repeat the test on the same day, clear the app's data on the test device first, or use another device: the device then gets a new ID, so the earlier run does not count.
+
 ## SDK API reference
 
 ### Android native (Kotlin/Java)
@@ -193,6 +298,7 @@ Gradle:
 - Start and stop recording at the confirmed triggers: start guarded by `isRecordingInProgress()`, stop unconditional and after init. No stop from crash handlers or lifecycle callbacks.
 - Exactly one metadata event per delivery attempt, successful or failed, with `delivered_to_neighbor`, `eta_first`, `eta_latest` and the stop identifier shared with the planned sequence; one planned sequence event with an `eta` per stop at route start. Metadata queued in local storage until the SDK is ready.
 - Device ID stored in our systems.
+- The final check (section 8) passed: `/testresult` returned `ok` and `config` `device`, with the 3 test metadata objects.
 - Remind me of the Google Play Console declarations this needs: background location access, and foreground service types Location and Data sync.
 - Give me a short summary of every file changed and a test plan: developer test on a real Android device (including killing the app mid-route and reopening it, an app start while offline, and logout and login mid-route), then a system test with about 3 hours of recording under field-like conditions.
 ````
