@@ -46,7 +46,8 @@ final deviceId = await sdk.getDeviceId(); // empty until initialized
 
 <Note>
 The device ID changes periodically, and clearing the app's data creates a new one. Check a
-recording with the ID that was current while it ran.
+recording with the ID that was current while it ran. If the app switched to another API key, only
+data sent under the new key counts: test after the switch.
 </Note>
 
 ## 2. Record a test session
@@ -108,8 +109,9 @@ curl "https://geodata.truemetrics.cloud/V1/testresult?id_device=$DEVICE_ID"
 No API key is needed: the device ID selects the device. Without `date`, today (UTC) is checked.
 If you check after 00:00 UTC, add the day of the test, e.g. `&date=2026-10-28`.
 
-The test passes when `status` is `ok` and `customer_metadata` has 3 entries whose `fields` include
-`test_run_id` and `test_index`. Values are never returned, so count the entries.
+The test passes when `status` is `ok`, `config` is `device`, and `customer_metadata` has 3 entries
+whose `fields` include `test_run_id` and `test_index`. Values are never returned, so count the
+entries. With `config` `unavailable` the rates were not checked, so `ok` is only a partial result.
 
 ### Query parameters
 
@@ -155,15 +157,15 @@ checked; the counts and the customer metadata still are.
   "date": "2026-10-28",
   "status": "ok",
   "reasons": [],
-  "counts": { "gyro": 0, "acc": 35460, "gps": 1802 },
+  "counts": { "gyro": 0, "acc": 35460, "gps": 1796 },
   "recording_minutes": 30.0,
   "sensors": {
-    "gyro": { "expected": false, "source": "gyroscope", "configured_hz": 0.0, "count": 0, "hz": null,
+    "gyro": { "expected": false, "source": "gyroscope", "configured_hz": 0.0, "count": 0, "hz": 0.0,
               "active_minutes": 0, "max_gap_minutes": 0.0, "note": "gyroscope is off in the config" },
     "acc":  { "expected": true, "source": "accelerometer", "configured_hz": 20.0, "count": 35460,
               "hz": 19.7, "active_minutes": 31, "max_gap_minutes": 0.1 },
-    "gps":  { "expected": true, "source": "fusedlocation", "configured_hz": 1.0, "count": 1802,
-              "hz": 1.0, "active_minutes": 31, "max_gap_minutes": 0.1 }
+    "gps":  { "expected": true, "source": "fusedlocation", "configured_hz": 1.0, "count": 1796,
+              "hz": 0.9977, "active_minutes": 31, "max_gap_minutes": 0.1 }
   },
   "config": "device",
   "upload_mode": "upload_always",
@@ -223,7 +225,7 @@ checked; the counts and the customer metadata still are.
       Readings received that day. A reading sent twice counts once.
     </ResponseField>
     <ResponseField name="hz" type="number | null">
-      `count` divided by the recording time; `null` when the device sent nothing.
+      `count` divided by the recording time; `null` when the device recorded nothing that day.
     </ResponseField>
     <ResponseField name="active_minutes" type="integer">
       UTC clock minutes with at least one reading. Far below `recording_minutes` means the sensor
@@ -259,7 +261,8 @@ checked; the counts and the customer metadata still are.
 </ResponseField>
 
 An ID truemetrics has never seen, for example a typo or a device whose SDK never finished
-initializing, returns `failed` with zero counts.
+initializing, returns `failed` with zero counts, `config` `unavailable` and a single reason
+(below).
 
 ## Errors
 
@@ -277,7 +280,9 @@ initializing, returns `failed` with zero counts.
 | `acc_count 312 <= 1000` (or `gyro_`, `gps_`) | The device sent few or no readings: the recording was short or did not run, a permission is missing, or the data has not been uploaded yet. |
 | `acc_hz 6.2 < 15 (75% of the configured 20 Hz)` | Readings arrived, but slower than configured, for example because the system restricted the app in the background. |
 | `no customer metadata` | No metadata was logged that day. See [Metadata](/metadata). |
+| `no customer metadata: in metadata_triggered mode …` | In `metadata_triggered` mode, no metadata and therefore no sensor data either. Log the test metadata, then check again. |
 | `traffic limit reached: …` | The account's traffic limit stopped recording. Contact truemetrics. |
+| `unknown device: …` | No SDK has fetched a configuration with this ID: check it for typos, and that the SDK initialized on the device. |
 
 <Info>
 Anyone who has a device ID can read this summary for it. It contains no positions and no

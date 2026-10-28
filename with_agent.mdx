@@ -172,10 +172,10 @@ Finish with this test, together with me: I run it on the test device, you tell m
 
        curl "https://geodata.truemetrics.cloud/V1/testresult?id_device=<device ID>&date=<YYYY-MM-DD>"
 
-   No API key is needed. The test passes when `status` is `ok` and `customer_metadata` holds the 3 test objects: three entries whose `fields` include `test_run_id` and `test_index` (values are not returned).
+   No API key is needed. The test passes when `status` is `ok`, `config` is `device` and `customer_metadata` holds the 3 test objects: three entries whose `fields` include `test_run_id` and `test_index` (values are not returned). With `config` `unavailable` the rates were not checked: report that to me instead of a pass.
 5. Retry: if it has not passed, check again every 5 minutes, up to 45 minutes after the recording stopped. Only then report the test as failed.
 
-If it failed, go through every entry in `reasons` with me and suggest fixes. Few or no readings: recording did not start, or a sensor permission is missing (section 1). Rates below the configured frequency: the app is restricted in the background, e.g. by battery optimization. `no customer metadata`: metadata was logged before the SDK was ready, or never sent (section 5). To repeat the test on the same day, clear the app's data on the test device first, or use another device: the device then gets a new ID, so the earlier run does not count.
+If it failed, go through every entry in `reasons` with me and suggest fixes. Few or no readings: recording did not start, or a sensor permission is missing (section 1). Rates below the configured frequency: the app is restricted in the background, e.g. by battery optimization. `no customer metadata`: metadata was logged before the SDK was ready, or never sent (section 5). `unknown device`: the ID is mistyped, or the SDK never initialized on that device. To repeat the test on the same day, clear the app's data on the test device first, or use another device: the device then gets a new ID, so the earlier run does not count.
 
 ## SDK API reference
 
@@ -209,7 +209,7 @@ Gradle:
 - Start and stop recording at the confirmed triggers: start guarded by `isRecordingInProgress()`, stop unconditional and after init. No stop from crash handlers or lifecycle callbacks.
 - Exactly one metadata event per delivery attempt, successful or failed, with `delivered_to_neighbor`, `eta_first`, `eta_latest` and the stop identifier shared with the planned sequence; one planned sequence event with an `eta` per stop at route start. Metadata queued in local storage until the SDK is ready.
 - Device ID stored in our systems.
-- The final check (section 8) passed: `/testresult` returned `ok` with the 3 test metadata objects.
+- The final check (section 8) passed: `/testresult` returned `ok` and `config` `device`, with the 3 test metadata objects.
 - Remind me of the Google Play Console declarations this needs: background location access, and foreground service types Location and Data sync.
 - Give me a short summary of every file changed and a test plan: developer test on a real Android device (including killing the app mid-route and reopening it, an app start while offline, and logout and login mid-route), then the final check from section 8, then a system test with about 3 hours of recording under field-like conditions.
 ````
