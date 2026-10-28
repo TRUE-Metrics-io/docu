@@ -170,12 +170,12 @@ Finish with this test, together with me: I run it on the test device, you tell m
 3. Waiting (20 min): stop the recording and wait 20 minutes before the first check. Data takes 15 to 20 minutes to become queryable; tell me this is expected, not an error.
 4. Check: ask me for the test device's ID (section 7), then, with the recording's UTC date, run this (or give it to me if you cannot run commands):
 
-       curl "https://geodata.truemetrics.cloud/V1/testresult?id_device=<device ID>&date=<YYYY-MM-DD>"
+       curl -H "x-api-key: <API key>" "https://geodata.truemetrics.cloud/V1/testresult?id_device=<device ID>&date=<YYYY-MM-DD>"
 
-   No API key is needed. The test passes when `status` is `ok`, `config` is `device` and `customer_metadata` holds the 3 test objects: three entries whose `fields` include `test_run_id` and `test_index` (values are not returned). With `config` `unavailable` the rates were not checked: report that to me instead of a pass.
+   Use the same API key the app initializes the SDK with ("API key" above), taken from where you stored it; do not write it into any committed file. A `403` means the key is missing, wrong, or not yet enabled for this check: tell me to ask truemetrics to enable it. The test passes when `status` is `ok`, `config` is `device` and `customer_metadata` holds the 3 test objects: three entries whose `fields` include `test_run_id` and `test_index` (values are not returned). With `config` `unavailable` the rates were not checked: report that to me instead of a pass.
 5. Retry: if it has not passed, check again every 5 minutes, up to 45 minutes after the recording stopped. Only then report the test as failed.
 
-If it failed, go through every entry in `reasons` with me and suggest fixes. Few or no readings: recording did not start, or a sensor permission is missing (section 1). Rates below the configured frequency: the app is restricted in the background, e.g. by battery optimization. `no customer metadata`: metadata was logged before the SDK was ready, or never sent (section 5). `unknown device`: the ID is mistyped, or the SDK never initialized on that device. To repeat the test on the same day, clear the app's data on the test device first, or use another device: the device then gets a new ID, so the earlier run does not count.
+If it failed, go through every entry in `reasons` with me and suggest fixes. Few or no readings: recording did not start, or a sensor permission is missing (section 1). Rates below the configured frequency: the app is restricted in the background, e.g. by battery optimization. `no customer metadata`: metadata was logged before the SDK was ready, or never sent (section 5). `unknown device`: the ID is mistyped, the key is not the one the app uses, or the SDK never initialized on that device. To repeat the test on the same day, clear the app's data on the test device first, or use another device: the device then gets a new ID, so the earlier run does not count.
 
 ## SDK API reference
 

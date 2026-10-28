@@ -46,8 +46,8 @@ final deviceId = await sdk.getDeviceId(); // empty until initialized
 
 <Note>
 The device ID changes periodically, and clearing the app's data creates a new one. Check a
-recording with the ID that was current while it ran. If the app switched to another API key, only
-data sent under the new key counts: test after the switch.
+recording with the ID that was current while it ran. If the app switched to another API key, check
+with the new key: only data sent under it counts, so test after the switch.
 </Note>
 
 ## 2. Record a test session
@@ -103,17 +103,23 @@ await sdk.logStandardMetadata(StandardMetadata(
 ## 3. Request the result
 
 ```bash
-curl "https://geodata.truemetrics.cloud/V1/testresult?id_device=$DEVICE_ID"
+curl -H "x-api-key: $API_KEY" \
+  "https://geodata.truemetrics.cloud/V1/testresult?id_device=$DEVICE_ID"
 ```
 
-No API key is needed: the device ID selects the device. Without `date`, today (UTC) is checked.
-If you check after 00:00 UTC, add the day of the test, e.g. `&date=2026-10-28`.
+Authenticate with the SDK API key your app initializes the SDK with. You only see devices that
+last fetched their configuration with that key. Without `date`, today (UTC) is checked. If you
+check after 00:00 UTC, add the day of the test, e.g. `&date=2026-10-28`.
 
 The test passes when `status` is `ok`, `config` is `device`, and `customer_metadata` has 3 entries
 whose `fields` include `test_run_id` and `test_index`. Values are never returned, so count the
 entries. With `config` `unavailable` the rates were not checked, so `ok` is only a partial result.
 
-### Query parameters
+### Parameters
+
+<ParamField header="x-api-key" type="string" required>
+  Your SDK API key. Identifies your account; you only see your own devices.
+</ParamField>
 
 <ParamField query="id_device" type="string" required>
   The device ID from step 1. Letters, digits, `.`, `_` and `-`, at most 64 characters.
@@ -260,15 +266,16 @@ checked; the counts and the customer metadata still are.
   plus the keys of its `extra`.
 </ResponseField>
 
-An ID truemetrics has never seen, for example a typo or a device whose SDK never finished
-initializing, returns `failed` with zero counts, `config` `unavailable` and a single reason
-(below).
+An ID unknown under your key, for example a typo, a device whose SDK never finished initializing,
+or a device that uses another API key, returns `failed` with zero counts, `config` `unavailable`
+and a single reason (below).
 
 ## Errors
 
 | Status | Meaning |
 | --- | --- |
 | `400` | `id_device` is missing or malformed, or `date` is malformed or outside the last 30 days. The message names the accepted range. |
+| `403` | Missing or invalid `x-api-key`, or the key is not enabled for this endpoint yet: ask your truemetrics contact. |
 | `429` | The shared rate limit was reached. Try again later. |
 | `500` | The check could not be run. Try again later. |
 | `504` | The check took longer than 29 seconds. Try again later. |
@@ -282,10 +289,4 @@ initializing, returns `failed` with zero counts, `config` `unavailable` and a si
 | `no customer metadata` | No metadata was logged that day. See [Metadata](/metadata). |
 | `no customer metadata: in metadata_triggered mode …` | In `metadata_triggered` mode, no metadata and therefore no sensor data either. Log the test metadata, then check again. |
 | `traffic limit reached: …` | The account's traffic limit stopped recording. Contact truemetrics. |
-| `unknown device: …` | No SDK has fetched a configuration with this ID: check it for typos, and that the SDK initialized on the device. |
-
-<Info>
-Anyone who has a device ID can read this summary for it. It contains no positions and no
-metadata values, but it does show how long the device recorded and when it logged metadata. Keep
-device IDs out of public channels.
-</Info>
+| `unknown device: …` | No SDK has fetched a configuration with this ID under this key: check the ID for typos, that the key is the one the app uses, and that the SDK initialized on the device. |
