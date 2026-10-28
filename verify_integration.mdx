@@ -102,10 +102,11 @@ await sdk.logStandardMetadata(StandardMetadata(
 ## 3. Request the result
 
 ```bash
-curl "https://geodata.truemetrics.cloud/V1/testresult?id_device=$DEVICE_ID&date=2026-10-28"
+curl "https://geodata.truemetrics.cloud/V1/testresult?id_device=$DEVICE_ID"
 ```
 
-No API key is needed: the device ID selects the device.
+No API key is needed: the device ID selects the device. Without `date`, today (UTC) is checked.
+If you check after 00:00 UTC, add the day of the test, e.g. `&date=2026-10-28`.
 
 The test passes when `status` is `ok` and `customer_metadata` has 3 entries whose `fields` include
 `test_run_id` and `test_index`. Values are never returned, so count the entries.
