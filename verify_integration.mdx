@@ -130,7 +130,7 @@ bash check_integration.sh "$DEVICE_ID"
 ```bash check_integration.sh
 #!/usr/bin/env bash
 # Checks a test recording against GET /testresult. Start it right after the recording stops:
-#   TRUEMETRICS_API_KEY=<SDK API key> ./check_integration.sh <device ID> [YYYY-MM-DD]
+#   bash check_integration.sh <device ID> [YYYY-MM-DD], with the key in TRUEMETRICS_API_KEY
 # Waits 20 minutes, then checks every 5 minutes until 45 minutes after the stop.
 # Exit code: 0 passed, 1 failed, 2 the check could not run, 3 wrong key or request.
 set -u
@@ -142,13 +142,14 @@ tests='[.customer_metadata[] | .fields // [] | select(index("test_run_id") and i
 body=$(mktemp) last=$(mktemp)
 trap 'rm -f "$body" "$last"' EXIT
 answered=false
+echo "Checking device $device_id for $day (UTC)."
 
 sleep "${WAIT_SECONDS:-1200}"
 for check in 1 2 3 4 5 6; do
   [ "$check" -gt 1 ] && sleep 300
   # The key goes in on stdin, so it never shows up in a process list.
   code=$(printf 'x-api-key: %s\n' "$TRUEMETRICS_API_KEY" |
-    curl -sS -o "$body" -w '%{http_code}' -H @- "$url") || code=000
+    curl --max-time 60 -sS -o "$body" -w '%{http_code}' -H @- "$url") || code=000
   echo "$(date -u +%H:%M) UTC, check $check of 6: HTTP $code"
   case $code in
     200)
@@ -180,8 +181,8 @@ exit 2
 It prints `PASSED`, or `FAILED` with the result's `reasons` (see
 [Reading a failed result](#reading-a-failed-result)); `test_objects` below 3 means the test
 metadata did not arrive. Exit code `2` means the check could not run, which is not a test result:
-run it again later with `WAIT_SECONDS=0`, which checks without waiting. If you start it after
-00:00 UTC, pass the recording's UTC day as the second argument.
+run it again later with `WAIT_SECONDS=0`, which checks without waiting, and the UTC day it printed
+at the start as the second argument. Pass that day too whenever you start it after 00:00 UTC.
 
 ### Single request
 

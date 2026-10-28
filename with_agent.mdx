@@ -172,7 +172,7 @@ Finish with this test, together with me: I run it on the test device, you tell m
 
        #!/usr/bin/env bash
        # Checks a test recording against GET /testresult. Start it right after the recording stops:
-       #   TRUEMETRICS_API_KEY=<SDK API key> ./check_integration.sh <device ID> [YYYY-MM-DD]
+       #   bash check_integration.sh <device ID> [YYYY-MM-DD], with the key in TRUEMETRICS_API_KEY
        # Waits 20 minutes, then checks every 5 minutes until 45 minutes after the stop.
        # Exit code: 0 passed, 1 failed, 2 the check could not run, 3 wrong key or request.
        set -u
@@ -184,13 +184,14 @@ Finish with this test, together with me: I run it on the test device, you tell m
        body=$(mktemp) last=$(mktemp)
        trap 'rm -f "$body" "$last"' EXIT
        answered=false
+       echo "Checking device $device_id for $day (UTC)."
 
        sleep "${WAIT_SECONDS:-1200}"
        for check in 1 2 3 4 5 6; do
          [ "$check" -gt 1 ] && sleep 300
          # The key goes in on stdin, so it never shows up in a process list.
          code=$(printf 'x-api-key: %s\n' "$TRUEMETRICS_API_KEY" |
-           curl -sS -o "$body" -w '%{http_code}' -H @- "$url") || code=000
+           curl --max-time 60 -sS -o "$body" -w '%{http_code}' -H @- "$url") || code=000
          echo "$(date -u +%H:%M) UTC, check $check of 6: HTTP $code"
          case $code in
            200)
@@ -218,7 +219,7 @@ Finish with this test, together with me: I run it on the test device, you tell m
        echo "The check could not run (rate limit or server error): this is not a test result. Try again later."
        exit 2
 
-   Exit code 0: the test passed. 1: it failed (see below); `test_objects` below 3 means the test metadata did not arrive. 2: the check could not run (rate limit or server error): that is not a test result, run it again later with `WAIT_SECONDS=0`. 3: the key or the request was rejected; on a `403`, tell me to ask truemetrics to enable the key for this check. A result with `config` `unavailable` (rates not checked) does not pass: report it to me.
+   Exit code 0: the test passed. 1: it failed (see below); `test_objects` below 3 means the test metadata did not arrive. 2: the check could not run (rate limit or server error): that is not a test result, run it again later with `WAIT_SECONDS=0` and, as the second argument, the UTC day it printed at the start (it would otherwise check the current day). 3: the key or the request was rejected; on a `403`, tell me to ask truemetrics to enable the key for this check. A result with `config` `unavailable` (rates not checked) does not pass: report it to me.
 
 If it failed, go through every entry in `reasons` with me and suggest fixes. Few or no readings: recording did not start, a sensor permission is missing (section 1), or the app was logged out or offline after the recording. Rates below the configured frequency: the app is restricted in the background, e.g. by battery optimization. `no customer metadata`: metadata was logged before the SDK was ready, or never sent (section 5). `unknown device`: the ID is mistyped, the key is not the one the app uses, or the SDK never initialized on that device. To repeat the test on the same day, clear the app's data on the test device first, or use another device: the device then gets a new ID, so the earlier run does not count.
 
