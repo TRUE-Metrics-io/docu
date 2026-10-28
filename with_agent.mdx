@@ -161,6 +161,22 @@ Do not send it again on re-plans, app restarts or re-logins for the same route: 
 
 After each init, take `deviceId` from the first `Initialized` or `RecordingInProgress` status (Flutter: from that `onStateChange` event), or call `getDeviceId()` once the SDK is ready (section 5), and store it in this app's own backend or logs next to the driver/session. It identifies the phone and installation, changes periodically, and is only used for debugging with truemetrics.
 
+## 8. Final check: test recording
+
+Finish with this test, together with me: I run it on the test device, you tell me each step and run the check. Tell me at the start that it takes about 50 to 75 minutes, most of it waiting.
+
+1. Recording (30 min): on a real Android test device that has not recorded earlier that UTC day, start recording and keep it running for 30 minutes, ideally while moving (walking or driving), so location, gyroscope and accelerometer produce data. Finish before 00:00 UTC: the check covers one whole UTC day.
+2. Metadata: at about minutes 1, 15 and 29 of the recording, log 3 test metadata objects through the wrapper (section 5) with `eventType` = `integration_test` and, in `extra`, the same `test_run_id` (a new unique ID, e.g. a UUID) and `test_index` `1`, `2`, `3`. A temporary debug action is enough; do not ship it in the release build.
+3. Waiting (20 min): stop the recording and wait 20 minutes before the first check. Data takes 15 to 20 minutes to become queryable; tell me this is expected, not an error.
+4. Check: ask me for the test device's ID (section 7), then, with the recording's UTC date, run this (or give it to me if you cannot run commands):
+
+       curl "https://geodata.truemetrics.cloud/V1/testresult?id_device=<device ID>&date=<YYYY-MM-DD>"
+
+   No API key is needed. The test passes when `status` is `ok` and `customer_metadata` holds the 3 test objects: three entries whose `fields` include `test_run_id` and `test_index` (values are not returned).
+5. Retry: if it has not passed, check again every 5 minutes, up to 45 minutes after the recording stopped. Only then report the test as failed.
+
+If it failed, go through every entry in `reasons` with me and suggest fixes. Few or no readings: recording did not start, or a sensor permission is missing (section 1). Rates below the configured frequency: the app is restricted in the background, e.g. by battery optimization. `no customer metadata`: metadata was logged before the SDK was ready, or never sent (section 5). To repeat the test on the same day, clear the app's data on the test device first, or use another device: the device then gets a new ID, so the earlier run does not count.
+
 ## SDK API reference
 
 ### Android native (Kotlin/Java)
@@ -193,6 +209,7 @@ Gradle:
 - Start and stop recording at the confirmed triggers: start guarded by `isRecordingInProgress()`, stop unconditional and after init. No stop from crash handlers or lifecycle callbacks.
 - Exactly one metadata event per delivery attempt, successful or failed, with `delivered_to_neighbor`, `eta_first`, `eta_latest` and the stop identifier shared with the planned sequence; one planned sequence event with an `eta` per stop at route start. Metadata queued in local storage until the SDK is ready.
 - Device ID stored in our systems.
+- The final check (section 8) passed: `/testresult` returned `ok` with the 3 test metadata objects.
 - Remind me of the Google Play Console declarations this needs: background location access, and foreground service types Location and Data sync.
-- Give me a short summary of every file changed and a test plan: developer test on a real Android device (including killing the app mid-route and reopening it, an app start while offline, and logout and login mid-route), then a system test with about 3 hours of recording under field-like conditions.
+- Give me a short summary of every file changed and a test plan: developer test on a real Android device (including killing the app mid-route and reopening it, an app start while offline, and logout and login mid-route), then the final check from section 8, then a system test with about 3 hours of recording under field-like conditions.
 ````
