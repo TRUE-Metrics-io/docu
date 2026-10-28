@@ -165,17 +165,62 @@ After each init, take `deviceId` from the first `Initialized` or `RecordingInPro
 
 Finish with this test, together with me: I run it on the test device, you tell me each step and run the check. Tell me at the start that it takes about 50 to 75 minutes, most of it waiting.
 
-1. Recording (30 min): on a real Android test device that has not recorded earlier that UTC day, start recording and keep it running for 30 minutes, ideally while moving (walking or driving), so location, gyroscope and accelerometer produce data. Finish before 00:00 UTC: the check covers one whole UTC day.
+1. Recording (30 min): on a real Android test device that has not recorded earlier that UTC day, once the SDK reports `Initialized` (metadata logged before that is lost), start recording and keep it running for 30 minutes, ideally while moving (walking or driving), so location, gyroscope and accelerometer produce data. Finish before 00:00 UTC: the check covers one whole UTC day.
 2. Metadata: at about minutes 1, 15 and 29 of the recording, log 3 test metadata objects through the wrapper (section 5) with `eventType` = `integration_test` and, in `extra`, the same `test_run_id` (a new unique ID, e.g. a UUID) and `test_index` `1`, `2`, `3`. A temporary debug action is enough; do not ship it in the release build.
-3. Waiting (20 min): stop the recording and wait 20 minutes before the first check. Data takes 15 to 20 minutes to become queryable; tell me this is expected, not an error.
-4. Check: ask me for the test device's ID (section 7), then, with the recording's UTC date, run this (or give it to me if you cannot run commands):
+3. Stop: stop the recording with the app's stop trigger or the debug action, not by logging out, and keep the app logged in and the device online until the check passes: the SDK uploads the end of the recording after the stop, and after a logout it uploads nothing until the next login.
+4. Check (up to 45 min): ask me for the test device's ID (section 7). Save the script below outside the repository (never commit it) and start it right after the recording stops, as `bash check_integration.sh "$DEVICE_ID"`, with `TRUEMETRICS_API_KEY` set from where you stored the API key ("API key" above), never written into a file or a command line. It waits 20 minutes, since data arrives with the SDK's uploads, typically 10 to 20 minutes after recording (tell me this wait is expected, not an error), then checks every 5 minutes up to 45 minutes after the stop. Run it in the background and read its output when it ends; if you cannot run background commands, give me the script and the command, and ask me for its output. It needs bash, curl 7.55 or newer and jq.
 
-       curl -H "x-api-key: <API key>" "https://geodata.truemetrics.cloud/V1/testresult?id_device=<device ID>&date=<YYYY-MM-DD>"
+       #!/usr/bin/env bash
+       # Checks a test recording against GET /testresult. Start it right after the recording stops:
+       #   TRUEMETRICS_API_KEY=<SDK API key> ./check_integration.sh <device ID> [YYYY-MM-DD]
+       # Waits 20 minutes, then checks every 5 minutes until 45 minutes after the stop.
+       # Exit code: 0 passed, 1 failed, 2 the check could not run, 3 wrong key or request.
+       set -u
+       device_id=${1:?usage: check_integration.sh <device ID> [YYYY-MM-DD]}
+       day=${2:-$(date -u +%F)} # the recording's UTC day, fixed before the wait
+       : "${TRUEMETRICS_API_KEY:?set TRUEMETRICS_API_KEY to your SDK API key}"
+       url="https://geodata.truemetrics.cloud/V1/testresult?id_device=$device_id&date=$day"
+       tests='[.customer_metadata[] | .fields // [] | select(index("test_run_id") and index("test_index"))] | length'
+       body=$(mktemp) last=$(mktemp)
+       trap 'rm -f "$body" "$last"' EXIT
+       answered=false
 
-   Use the same API key the app initializes the SDK with ("API key" above), taken from where you stored it; do not write it into any committed file. A `403` means the key is missing, wrong, or not yet enabled for this check: tell me to ask truemetrics to enable it. The test passes when `status` is `ok`, `config` is `device` and `customer_metadata` holds the 3 test objects: three entries whose `fields` include `test_run_id` and `test_index` (values are not returned). With `config` `unavailable` the rates were not checked: report that to me instead of a pass.
-5. Retry: if it has not passed, check again every 5 minutes, up to 45 minutes after the recording stopped. Only then report the test as failed.
+       sleep "${WAIT_SECONDS:-1200}"
+       for check in 1 2 3 4 5 6; do
+         [ "$check" -gt 1 ] && sleep 300
+         # The key goes in on stdin, so it never shows up in a process list.
+         code=$(printf 'x-api-key: %s\n' "$TRUEMETRICS_API_KEY" |
+           curl -sS -o "$body" -w '%{http_code}' -H @- "$url") || code=000
+         echo "$(date -u +%H:%M) UTC, check $check of 6: HTTP $code"
+         case $code in
+           200)
+             if jq -e ".status == \"ok\" and .config == \"device\" and ($tests) >= 3" "$body" >/dev/null; then
+               echo PASSED
+               jq "{counts, recording_minutes, test_objects: ($tests)}" "$body"
+               exit 0
+             fi
+             answered=true
+             cp "$body" "$last"
+             ;;
+           400 | 403)
+             cat "$body"
+             echo
+             [ "$code" = 403 ] && echo "Wrong API key, or the key is not enabled for this check yet: ask truemetrics."
+             exit 3
+             ;;
+         esac
+       done
+       if $answered; then
+         echo FAILED
+         jq "{status, reasons, config, counts, test_objects: ($tests)}" "$last"
+         exit 1
+       fi
+       echo "The check could not run (rate limit or server error): this is not a test result. Try again later."
+       exit 2
 
-If it failed, go through every entry in `reasons` with me and suggest fixes. Few or no readings: recording did not start, or a sensor permission is missing (section 1). Rates below the configured frequency: the app is restricted in the background, e.g. by battery optimization. `no customer metadata`: metadata was logged before the SDK was ready, or never sent (section 5). `unknown device`: the ID is mistyped, the key is not the one the app uses, or the SDK never initialized on that device. To repeat the test on the same day, clear the app's data on the test device first, or use another device: the device then gets a new ID, so the earlier run does not count.
+   Exit code 0: the test passed. 1: it failed (see below); `test_objects` below 3 means the test metadata did not arrive. 2: the check could not run (rate limit or server error): that is not a test result, run it again later with `WAIT_SECONDS=0`. 3: the key or the request was rejected; on a `403`, tell me to ask truemetrics to enable the key for this check. A result with `config` `unavailable` (rates not checked) does not pass: report it to me.
+
+If it failed, go through every entry in `reasons` with me and suggest fixes. Few or no readings: recording did not start, a sensor permission is missing (section 1), or the app was logged out or offline after the recording. Rates below the configured frequency: the app is restricted in the background, e.g. by battery optimization. `no customer metadata`: metadata was logged before the SDK was ready, or never sent (section 5). `unknown device`: the ID is mistyped, the key is not the one the app uses, or the SDK never initialized on that device. To repeat the test on the same day, clear the app's data on the test device first, or use another device: the device then gets a new ID, so the earlier run does not count.
 
 ## SDK API reference
 
@@ -211,5 +256,5 @@ Gradle:
 - Device ID stored in our systems.
 - The final check (section 8) passed: `/testresult` returned `ok` and `config` `device`, with the 3 test metadata objects.
 - Remind me of the Google Play Console declarations this needs: background location access, and foreground service types Location and Data sync.
-- Give me a short summary of every file changed and a test plan: developer test on a real Android device (including killing the app mid-route and reopening it, an app start while offline, and logout and login mid-route), then the final check from section 8, then a system test with about 3 hours of recording under field-like conditions.
+- Give me a short summary of every file changed and a test plan: developer test on a real Android device (including killing the app mid-route and reopening it, an app start while offline, and logout and login mid-route), then a system test with about 3 hours of recording under field-like conditions.
 ````

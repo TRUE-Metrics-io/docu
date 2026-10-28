@@ -26,12 +26,14 @@ next to the test session, for example in your logs or your backend.
 val sdk = TruemetricsSdk.getInstance()
 val deviceId = sdk.getDeviceId() // null until initialized
 
-// Or from the status
-sdk.observeSdkStatus().collect { status ->
-    when (status) {
-        is Status.Initialized -> log(status.deviceId)
-        is Status.RecordingInProgress -> log(status.deviceId)
-        else -> {}
+// Or from the status, e.g. in an Activity
+lifecycleScope.launch {
+    sdk.observeSdkStatus().collect { status ->
+        when (status) {
+            is Status.Initialized -> log(status.deviceId)
+            is Status.RecordingInProgress -> log(status.deviceId)
+            else -> {}
+        }
     }
 }
 ```
@@ -54,15 +56,19 @@ with the new key: only data sent under it counts, so test after the switch.
 
 The whole test takes about 50 to 75 minutes, most of it waiting.
 
-1. Record for 30 minutes on a device that has not recorded earlier that UTC day, ideally while
-   moving (walking or driving), and stop before 00:00 UTC. The whole UTC day is checked.
+1. On a device that has not recorded earlier that UTC day, wait until the SDK reports
+   `Initialized` (metadata logged before that is lost), then record for 30 minutes, ideally while
+   moving (walking or driving). Finish before 00:00 UTC: the whole UTC day is checked.
 2. During the recording, at about minutes 1, 15 and 29, log 3 test metadata objects with
    `eventType` `integration_test`, the same `test_run_id` (any unique ID) and a `test_index` of
    `1`, `2` and `3`, as shown below. Keep this out of your release build.
-3. Stop the recording and wait 20 minutes. Data typically becomes queryable 15 to 20 minutes after
-   it was recorded; same-day data lags behind, which is expected.
-4. If the check below has not passed yet, repeat it every 5 minutes, up to 45 minutes after the
-   recording stopped.
+3. Stop the recording with your app's stop trigger or a debug action, not by logging out. Keep the
+   app logged in and the device online until the check passes: the SDK uploads the end of the
+   recording after the stop, and after a logout it uploads nothing until the next login.
+4. Start the [check script](#check-script) right away. Data reaches truemetrics with the SDK's
+   uploads, typically 10 to 20 minutes after it was recorded, plus about a minute of processing,
+   so the script waits 20 minutes and then checks every 5 minutes, up to 45 minutes after the
+   stop.
 
 To repeat the whole test on the same day, clear the app's data on the test device first, or use
 another device. The device then gets a new ID, so the earlier run does not count.
@@ -72,6 +78,7 @@ Logging one test object:
 <CodeGroup>
 
 ```kotlin Android
+// SDK 1.6.0 or newer; on older versions pass "" for every standard field.
 val testRunId = UUID.randomUUID().toString() // one per test run
 
 // At about minutes 1, 15 and 29, with test_index "1", "2" and "3"
@@ -100,20 +107,93 @@ await sdk.logStandardMetadata(StandardMetadata(
 
 </CodeGroup>
 
-## 3. Request the result
+## 3. Check the result
+
+The test passes when `status` is `ok`, `config` is `device`, and `customer_metadata` has at least 3
+entries whose `fields` include `test_run_id` and `test_index`. Values are never returned, so count
+the entries. With `config` `unavailable` the rates were not checked, so `ok` is only a partial
+result.
+
+### Check script
+
+The script below runs the whole check. It needs bash, curl 7.55 or newer and jq. Start it right
+after the recording stops, with your SDK API key, the one your app initializes the SDK with, in
+`TRUEMETRICS_API_KEY`. Set the variable from where you keep the key, for example
+`read -rs TRUEMETRICS_API_KEY && export TRUEMETRICS_API_KEY`, rather than typing the key into a
+command:
 
 ```bash
-curl -H "x-api-key: $API_KEY" \
+DEVICE_ID=b3f0c2e4-5a1d-4c9e-9f3a-2d7e8c1b6a40 # the device ID from step 1
+bash check_integration.sh "$DEVICE_ID"
+```
+
+```bash check_integration.sh
+#!/usr/bin/env bash
+# Checks a test recording against GET /testresult. Start it right after the recording stops:
+#   TRUEMETRICS_API_KEY=<SDK API key> ./check_integration.sh <device ID> [YYYY-MM-DD]
+# Waits 20 minutes, then checks every 5 minutes until 45 minutes after the stop.
+# Exit code: 0 passed, 1 failed, 2 the check could not run, 3 wrong key or request.
+set -u
+device_id=${1:?usage: check_integration.sh <device ID> [YYYY-MM-DD]}
+day=${2:-$(date -u +%F)} # the recording's UTC day, fixed before the wait
+: "${TRUEMETRICS_API_KEY:?set TRUEMETRICS_API_KEY to your SDK API key}"
+url="https://geodata.truemetrics.cloud/V1/testresult?id_device=$device_id&date=$day"
+tests='[.customer_metadata[] | .fields // [] | select(index("test_run_id") and index("test_index"))] | length'
+body=$(mktemp) last=$(mktemp)
+trap 'rm -f "$body" "$last"' EXIT
+answered=false
+
+sleep "${WAIT_SECONDS:-1200}"
+for check in 1 2 3 4 5 6; do
+  [ "$check" -gt 1 ] && sleep 300
+  # The key goes in on stdin, so it never shows up in a process list.
+  code=$(printf 'x-api-key: %s\n' "$TRUEMETRICS_API_KEY" |
+    curl -sS -o "$body" -w '%{http_code}' -H @- "$url") || code=000
+  echo "$(date -u +%H:%M) UTC, check $check of 6: HTTP $code"
+  case $code in
+    200)
+      if jq -e ".status == \"ok\" and .config == \"device\" and ($tests) >= 3" "$body" >/dev/null; then
+        echo PASSED
+        jq "{counts, recording_minutes, test_objects: ($tests)}" "$body"
+        exit 0
+      fi
+      answered=true
+      cp "$body" "$last"
+      ;;
+    400 | 403)
+      cat "$body"
+      echo
+      [ "$code" = 403 ] && echo "Wrong API key, or the key is not enabled for this check yet: ask truemetrics."
+      exit 3
+      ;;
+  esac
+done
+if $answered; then
+  echo FAILED
+  jq "{status, reasons, config, counts, test_objects: ($tests)}" "$last"
+  exit 1
+fi
+echo "The check could not run (rate limit or server error): this is not a test result. Try again later."
+exit 2
+```
+
+It prints `PASSED`, or `FAILED` with the result's `reasons` (see
+[Reading a failed result](#reading-a-failed-result)); `test_objects` below 3 means the test
+metadata did not arrive. Exit code `2` means the check could not run, which is not a test result:
+run it again later with `WAIT_SECONDS=0`, which checks without waiting. If you start it after
+00:00 UTC, pass the recording's UTC day as the second argument.
+
+### Single request
+
+```bash
+printf 'x-api-key: %s\n' "$TRUEMETRICS_API_KEY" |
+  curl -sS -w '\nHTTP %{http_code}\n' -H @- \
   "https://geodata.truemetrics.cloud/V1/testresult?id_device=$DEVICE_ID"
 ```
 
-Authenticate with the SDK API key your app initializes the SDK with. You only see devices that
-last fetched their configuration with that key. Without `date`, today (UTC) is checked. If you
-check after 00:00 UTC, add the day of the test, e.g. `&date=2026-10-28`.
-
-The test passes when `status` is `ok`, `config` is `device`, and `customer_metadata` has 3 entries
-whose `fields` include `test_run_id` and `test_index`. Values are never returned, so count the
-entries. With `config` `unavailable` the rates were not checked, so `ok` is only a partial result.
+With `DEVICE_ID` set as above. The key goes in on stdin, so it stays out of process lists. You only see devices that last fetched
+their configuration with your key. Without `date`, today (UTC) is checked. If you check after
+00:00 UTC, add the day of the test, e.g. `&date=2026-10-28`.
 
 ### Parameters
 
@@ -149,8 +229,8 @@ The checks follow the configuration the device was last served.
 | Traffic limit | Not reached. When the served configuration tells the SDK to stop recording, this is the first reason. |
 
 In `metadata_triggered` mode the SDK uploads sensor data only around metadata events. If the
-device sent neither metadata nor sensor readings that day, the only reason is the missing
-metadata, since the empty sensors follow from it.
+device sent neither metadata nor sensor readings that day, the missing metadata is the only reason
+(besides a reached traffic limit), since the empty sensors follow from it.
 
 When the device's configuration is unknown, `config` is `unavailable`. The rates are then not
 checked; the counts and the customer metadata still are.
@@ -200,6 +280,10 @@ checked; the counts and the customer metadata still are.
 <ResponseField name="reasons" type="string[]">
   One human-readable entry per failed check, naming the value and the bar it missed. Empty when
   `status` is `ok`.
+</ResponseField>
+
+<ResponseField name="id_device" type="string">
+  The device ID that was checked.
 </ResponseField>
 
 <ResponseField name="date" type="string">
@@ -261,7 +345,8 @@ checked; the counts and the customer metadata still are.
 
 <ResponseField name="customer_metadata" type="object[]">
   The metadata the device sent that day, newest first, at most 200: when each was recorded
-  (`t_utc`, Unix seconds) and its field names (`fields`). Values are never returned. An event
+  (`t_utc`, Unix seconds) and its field names (`fields`; `null` for metadata that is not a JSON
+  object). Values are never returned. An event
   logged as `StandardMetadata` always has the nine standard keys (`t_event`, `type_event`, …),
   plus the keys of its `extra`.
 </ResponseField>
@@ -284,7 +369,7 @@ and a single reason (below).
 
 | Reason | Usually means |
 | --- | --- |
-| `acc_count 312 <= 1000` (or `gyro_`, `gps_`) | The device sent few or no readings: the recording was short or did not run, a permission is missing, or the data has not been uploaded yet. |
+| `acc_count 312 <= 1000` (or `gyro_`, `gps_`) | The device sent few or no readings: the recording was short or did not run, a permission is missing, or the data has not been uploaded yet (the app was logged out or offline after the recording). |
 | `acc_hz 6.2 < 15 (75% of the configured 20 Hz)` | Readings arrived, but slower than configured, for example because the system restricted the app in the background. |
 | `no customer metadata` | No metadata was logged that day. See [Metadata](/metadata). |
 | `no customer metadata: in metadata_triggered mode …` | In `metadata_triggered` mode, no metadata and therefore no sensor data either. Log the test metadata, then check again. |
