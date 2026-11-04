@@ -142,6 +142,7 @@ Put everything else into `extra`:
 | delivered_to_neighbor | Required. `true` if handed to a neighbor or any other address than the recipient's, else `false`. Plus `neighbor_address` / `neighbor_address_id` if known. |
 | service_type | Raw internal code as-is (e.g. signature required, age check). |
 | eta_first, eta_latest | Required. First planned ETA and the most recent updated ETA, as ISO 8601 timestamps. If the app has only one ETA, send it in both. If it has none, tell me; do not compute one. |
+| depot_id | ID of the depot or hub the route starts from, as this app's systems name it. Send it on every event, also on `planned_sequence` (section 6). If the app has no depot ID, tell me; do not invent one. |
 | street, house_number, postal_code, city | Address parts, if the app has them separately. |
 | vehicle_type, driver_id, driver_experience, ... | Any other fields commonly used in this app's systems. No recipient names, phone numbers or free-text notes. |
 
@@ -149,7 +150,7 @@ Confirm with me: the field mapping from this app's data models to the tables abo
 
 ## 6. Log the planned sequence at route start
 
-Required. Exactly once per route, at the moment the route is actually started, make one dedicated `logMetadata` call for the planned sequence. It is its own event, never combined with a delivery event. Set `eventType` = `planned_sequence`, `eventTime` and `tourId` set, and in `extra` under the key `planned_sequence` the ordered list of planned stops serialized as a JSON array string, e.g. `[{"seq":1,"task_id":"T321","eta":"2026-10-15T08:12:00Z"}, ...]`. Also set `extra.stop_count`. Leave the other standard fields empty.
+Required. Exactly once per route, at the moment the route is actually started, make one dedicated `logMetadata` call for the planned sequence. It is its own event, never combined with a delivery event. Set `eventType` = `planned_sequence`, `eventTime` and `tourId` set, and in `extra` under the key `planned_sequence` the ordered list of planned stops serialized as a JSON array string, e.g. `[{"seq":1,"task_id":"T321","eta":"2026-10-15T08:12:00Z"}, ...]`. Also set `extra.stop_count` and `extra.depot_id`. Leave the other standard fields empty.
 
 Traceability: each planned stop needs exactly one identifier, e.g. task_id, stop_id or parcel_id, whichever the app has. Use the same key name and value in the delivery events from section 5 (add it to their `extra` if missing), so truemetrics can match each planned stop to its actual delivery event. No further IDs are needed in the sequence. Required: each planned stop must also carry its planned ETA in `eta` (ISO 8601).
 
@@ -296,7 +297,7 @@ Gradle:
 - All required permissions present in the merged manifest and requested at runtime before recording.
 - Init on login and on every app start with a logged-in user, API key, explicit start, deinit on logout, status observed and logged.
 - Start and stop recording at the confirmed triggers: start guarded by `isRecordingInProgress()`, stop unconditional and after init. No stop from crash handlers or lifecycle callbacks.
-- Exactly one metadata event per delivery attempt, successful or failed, with `delivered_to_neighbor`, `eta_first`, `eta_latest` and the stop identifier shared with the planned sequence; one planned sequence event with an `eta` per stop at route start. Metadata queued in local storage until the SDK is ready.
+- Exactly one metadata event per delivery attempt, successful or failed, with `delivered_to_neighbor`, `eta_first`, `eta_latest`, `depot_id` and the stop identifier shared with the planned sequence; one planned sequence event with an `eta` per stop at route start. Metadata queued in local storage until the SDK is ready.
 - Device ID stored in our systems.
 - The final check (section 8) passed: `/testresult` returned `ok` and `config` `device`, with the 3 test metadata objects.
 - Remind me of the Google Play Console declarations this needs: background location access, and foreground service types Location and Data sync.
