@@ -14,7 +14,7 @@ For customers using AWS as their cloud provider, the setup is straightforward. S
 
 ### How it works
 
-truemetrics writes exports to an Amazon S3 bucket in AWS region `eu-central-1`. The bucket is owned by truemetrics and used only for your data. Each export run creates a new folder with Parquet files and a `schema_<id_api_key>.json`.
+truemetrics writes exports to an Amazon S3 bucket in AWS region `eu-central-1`. The bucket is owned by truemetrics and used only for your data. Each export run creates a new folder with Parquet files and a `schema_*.json`.
 
 To get the files into Google Cloud, you set up a daily copy job with **Google Storage Transfer Service** (STS). The job runs in your Google Cloud project and copies new files from our S3 bucket into a Cloud Storage bucket you own.
 
