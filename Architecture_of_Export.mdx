@@ -79,7 +79,7 @@ In the Cloud Console, go to **Storage Transfer Service → Create transfer job**
 ### Special cases
 
 - **Customer-managed encryption key (CMEK):** grant the Cloud Storage service agent of the destination bucket's project (`service-PROJECT_NUMBER@gs-project-accounts.iam.gserviceaccount.com`) Cloud KMS CryptoKey Encrypter/Decrypter (`roles/cloudkms.cryptoKeyEncrypterDecrypter`) on the key.
-- **VPC Service Controls:** allow Storage Transfer Service in the perimeter around the destination project. Otherwise the job cannot write to the bucket.
+- **VPC Service Controls:** if Storage Transfer Service (`storagetransfer.googleapis.com`) and Cloud Storage (`storage.googleapis.com`) are restricted services in your perimeter, put the project that runs the transfer job in the same perimeter as the project of the destination bucket. If the job's project stays outside, add a perimeter rule that lets it write to the bucket. VPC Service Controls does not block the import from our S3 bucket itself.
 
 ## SFTP
 
