@@ -1,4 +1,4 @@
-Daily, we generate a new data set, which is synced with your data storage. To give you control about the versioning, each export is written to a new folder named after its creation time in UTC (`YYYY-MM-DD-HH-MM-SS`). Older folders stay in place, so the newest folder holds the latest export.
+Daily, we generate a new data set, which is synced with your data storage. To give you control about the versioning, each export is written to a new folder named after its creation time in UTC (`YYYY-MM-DD-HH-MM-SS`). Older folders stay in place. Each folder contains only the changes since the previous export, so the newest folder is not a complete data set: process every folder you have not imported yet, in timestamp order.
 
 For the AWS and Google Cloud exports, the folder structure looks like this:
 

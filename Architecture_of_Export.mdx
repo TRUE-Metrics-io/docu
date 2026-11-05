@@ -14,7 +14,7 @@ For customers using AWS as their cloud provider, the setup is straightforward. S
 
 ### How it works
 
-truemetrics writes exports to an Amazon S3 bucket in AWS region `eu-central-1`. The bucket is owned by truemetrics and used only for your data. Each export run creates a new folder with Parquet files and a `schema.json`.
+truemetrics writes exports to an Amazon S3 bucket in AWS region `eu-central-1`. The bucket is owned by truemetrics and used only for your data. Each export run creates a new folder with Parquet files and a `schema_<id_api_key>.json`.
 
 To get the files into Google Cloud, you set up a daily copy job with **Google Storage Transfer Service** (STS). The job runs in your Google Cloud project and copies new files from our S3 bucket into a Cloud Storage bucket you own.
 
@@ -74,10 +74,11 @@ In the Cloud Console, go to **Storage Transfer Service → Create transfer job**
 - **Destination:** your bucket from step 2, optionally a folder in it.
 - **Schedule:** daily, starting after the export time we sent you.
 - **Options:** keep **Delete files from source** off. We keep the files on our side for our own delivery checks and clean them up ourselves.
+- **When to delete:** select **Never**. Otherwise a later run deletes your copies of older exports once we have cleaned them up on our side.
 
 ### Special cases
 
-- **Customer-managed encryption key (CMEK):** also grant the service agent Cloud KMS CryptoKey Encrypter/Decrypter (`roles/cloudkms.cryptoKeyEncrypterDecrypter`) on the key.
+- **Customer-managed encryption key (CMEK):** grant the Cloud Storage service agent of the destination bucket's project (`service-PROJECT_NUMBER@gs-project-accounts.iam.gserviceaccount.com`) Cloud KMS CryptoKey Encrypter/Decrypter (`roles/cloudkms.cryptoKeyEncrypterDecrypter`) on the key.
 - **VPC Service Controls:** allow Storage Transfer Service in the perimeter around the destination project. Otherwise the job cannot write to the bucket.
 
 ## SFTP
