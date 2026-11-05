@@ -1,6 +1,6 @@
 ---
 title: 'Android Native Integration'
-description: 'Complete guide for integrating Truemetrics SDK 1.6.3 into Android applications'
+description: 'Complete guide for integrating Truemetrics SDK 1.7.0 into Android applications'
 ---
 
 The Truemetrics SDK provides advanced sensor data collection and analytics capabilities for Android
@@ -36,7 +36,7 @@ Then add the dependency to your app-level `build.gradle`:
 
 ```gradle
 dependencies {
-    implementation 'io.truemetrics:truemetricssdk:1.6.3'
+    implementation 'io.truemetrics:truemetricssdk:1.7.0'
 }
 ```
 
@@ -84,12 +84,14 @@ if (sdk.isRecordingInProgress()) {
 
 ## Initialization Lifecycle
 
-`TruemetricsSdk.init()` returns immediately but the SDK is **not ready for use until it reaches `Status.Initialized`**. Initialization runs asynchronously in the background: it binds a foreground service, then fetches the configuration from the backend.
+`TruemetricsSdk.init()` returns immediately but the SDK is **not ready for use until it reaches `Status.Initialized` or `Status.AskForPermissions`**. When a permission the configuration needs is missing, the SDK reports `AskForPermissions` right after `Initialized` (or after `DelayedStart`, when a start delay is configured), so a status observer may see only `AskForPermissions`; the SDK is ready in that state too. `AskForPermissions` is also reported during a recording whenever the sensor set is rebuilt (a sensor configuration change or a `setAllSensorsEnabled()` call) while a permission it needs is missing; the recording continues, so check `isRecordingInProgress()`. Initialization runs asynchronously in the background: it binds a foreground service, then fetches the configuration from the backend.
 
 ### State Transitions
 
 ```
-Uninitialized ──► Initializing ──► Initialized
+Uninitialized ──► Initializing ──► Initialized ──► AskForPermissions
+                       │                          (if a permission the configuration
+                       │                           needs is missing; still ready)
                        │
                        ├──► Error(AUTHENTICATION_ERROR)   (invalid/expired/revoked API key)
                        │
@@ -111,12 +113,12 @@ Uninitialized ──► Initializing ──► Initialized
 | Invalid API key | fails fast (under ~2 seconds) with `Status.Error(AUTHENTICATION_ERROR)` |
 
 <Note>
-There is no hard timeout on initialization. Under poor connectivity the SDK stays in `Status.Initializing` and keeps retrying. Do not impose an arbitrary client-side timeout — either wait for `Status.Initialized` or a `Status.Error` whose `errorCode` is not `FOREGROUND_SERVICE_START_REFUSED` (that one clears itself, see below), or gate UI on `getDeviceId()` becoming non-null.
+There is no hard timeout on initialization. Under poor connectivity the SDK stays in `Status.Initializing` and keeps retrying. Do not impose an arbitrary client-side timeout — either wait for `Status.Initialized` (or `Status.AskForPermissions`) or a `Status.Error` whose `errorCode` is not `FOREGROUND_SERVICE_START_REFUSED` (that one clears itself, see below).
 </Note>
 
 ### Checking Initialization Status
 
-**Recommended — observe the status flow and wait for `Status.Initialized`:**
+**Recommended — observe the status flow and wait for `Status.Initialized` or `Status.AskForPermissions`:**
 
 ```kotlin
 import io.truemetrics.truemetricssdk.engine.ErrorCode
@@ -127,6 +129,8 @@ suspend fun awaitSdkReady(): String {
     val sdk = TruemetricsSdk.getInstance()
     val ready = sdk.observeSdkStatus().first { status ->
         status is Status.Initialized ||
+        // Ready too: a permission the configuration needs is missing.
+        status is Status.AskForPermissions ||
         status is Status.RecordingInProgress ||
         status is Status.DelayedStart ||
         // Not a failure: Android refused the foreground service because the app was
@@ -155,25 +159,23 @@ sdk.observeSdkStatus().collect { status ->
     when (status) {
         is Status.Initializing -> showSpinner()
         is Status.Initialized -> enableStartButton(status.deviceId)
+        is Status.AskForPermissions -> {
+            // Ready too; the configuration needs these permissions
+            requestPermissions(status.permissions)
+            // Also reported during a recording, which continues
+            if (!sdk.isRecordingInProgress()) sdk.getDeviceId()?.let { enableStartButton(it) }
+        }
         is Status.Error -> showError(status.errorCode, status.message)
         else -> {}
     }
 }
 ```
 
-**Quick synchronous check** — `getDeviceId()` returns `null` until initialization completes:
-
-```kotlin
-if (sdk.getDeviceId() != null) {
-    // SDK is initialized
-}
-```
-
 ### Calling Other APIs Before Initialization Completes
 
-- `startRecording()` — safe to call immediately after `init()`. The request is kept and runs once the service is up: both while the service is still binding, and when Android refused to start it. If initialization failed for some other reason, the call reports `Status.Error(CONFIG_ERROR)` — or leaves a more specific error in place, if one is already reported. If the SDK was never initialized, it reports `Status.Error(NOT_INITIALIZED)`. To avoid these, wait for `Status.Initialized`, or configure an auto-start (see [Recording lifecycle](#recording-lifecycle)).
-- `logMetadata()` — ignored with a log warning if called before initialization. Wait for `Status.Initialized` before logging.
-- `getDeviceId()`, `getActiveConfig()`, `getUploadStatistics()`, `getSensorStatistics()` — return `null` until initialization completes.
+- `startRecording()` — safe to call immediately after `init()`. The request is kept and runs once the service is up: both while the service is still binding, and when Android refused to start it. If initialization failed for some other reason, the call reports `Status.Error(CONFIG_ERROR)` — or leaves a more specific error in place, if one is already reported. If the SDK was never initialized, it reports `Status.Error(NOT_INITIALIZED)`. To avoid these, wait for `Status.Initialized` or `Status.AskForPermissions`, or configure an auto-start (see [Recording lifecycle](#recording-lifecycle)).
+- `logMetadata()` — called after `init()` but before the SDK is ready, the event is held and logged once it is ready. Called before `init()` or after `deinitialize()`, it is ignored with a log warning. An event can be lost while the status is `Status.Error(FOREGROUND_SERVICE_START_REFUSED)`, and held events are not logged if initialization fails, for example with an invalid API key. Held events are kept in memory only: they are not logged if `deinitialize()` is called, or the app's process ends, before the SDK is ready. To keep such events, queue them in your app until the SDK is ready. Before 1.7.0, an event logged right after `init()`, before the SDK's service was up, was ignored.
+- `getDeviceId()`, `getActiveConfig()`, `getUploadStatistics()`, `getSensorStatistics()` — return `null` before the SDK's service is up, but can return a value while the status is still `Status.Initializing`, so do not use them to check whether the SDK is ready: follow the status flow instead.
 
 ### Terminal vs. Transient Failures
 
@@ -181,7 +183,7 @@ if (sdk.getDeviceId() != null) {
 | --- | --- | --- |
 | `Status.Initializing` (stuck) | Backend unreachable or returning 5xx; SDK auto-retries every 30s | Wait, or surface a "connecting" indicator. No need to call `init()` again. |
 | `Status.Error(AUTHENTICATION_ERROR)` | API key invalid, expired, or revoked. SDK has deinitialized itself. | Do **not** retry with the same key. Fix the key, then call `init()` again. |
-| `Status.Error(CONFIG_ERROR)` | `startRecording()` was called before config was loaded | Await `Status.Initialized` before calling `startRecording()`. |
+| `Status.Error(CONFIG_ERROR)` | `startRecording()` was called before config was loaded | Await `Status.Initialized` or `Status.AskForPermissions` before calling `startRecording()`. |
 | `Status.Error(NOT_INITIALIZED)` | `startRecording()` was called without an initialized SDK — before `init()`, or after `deinitialize()` | Call `init()` first. The request is not held; call `startRecording()` again once initialized. |
 | `Status.Error(MISSING_NOTIFICATION_PERMISSION)` | Android 13+ notification permission not granted | Request `POST_NOTIFICATIONS`, then re-init. |
 | `Status.Error(FOREGROUND_SERVICE_START_REFUSED)` | **Transient.** `init()` ran in the background, where Android refuses to start a foreground service | None. The SDK retries when your UI comes to the foreground, and a `startRecording()` made in the meantime runs then. If your app has no UI, call `deinitialize()` and then `init()` again from an exempt receiver, then `startRecording()` again — `deinitialize()` drops a pending request. |
@@ -225,7 +227,9 @@ val units = SdkConfiguration.Builder("YOUR_API_KEY")
     .build()
 ```
 
-While a configured delay is pending, the SDK reports `Status.DelayedStart`. Calling
+While a configured delay is pending, the SDK reports `Status.DelayedStart`. If a permission the
+configuration needs is missing, `AskForPermissions` is reported right after it, so an observer may see
+only `AskForPermissions`; the delayed start still runs. Calling
 `stopRecording()` in that window cancels the pending start. The default is
 `SdkConfiguration.EXPLICIT_START`, and any negative value means the same thing: wait for an explicit
 `startRecording()`.
@@ -294,6 +298,7 @@ val deviceId = sdk.getDeviceId()
 sdk.observeSdkStatus().collect { status ->
     when (status) {
         is Status.Initialized -> println("Device ID: ${status.deviceId}")
+        is Status.AskForPermissions -> println("Device ID: ${sdk.getDeviceId()}")
         is Status.RecordingInProgress -> println("Device ID: ${status.deviceId}")
         else -> {}
     }
@@ -332,7 +337,7 @@ For advanced metadata with templates and tags, see [Metadata Guide](/metadata).
 ### Sensor Management
 
 ```kotlin
-// Enable/disable all sensors
+// Record from all sensors (true) or the configured set (false)
 sdk.setAllSensorsEnabled(true)
 
 // Check if sensors are enabled
@@ -359,6 +364,22 @@ sdk.deinitialize()
 **Warning:** After calling `deinitialize()`, the SDK instance becomes unusable. You must call
 `init()` again to use the SDK.
 
+`deinitialize()` returns quickly and is safe to call from the main thread. If a recording is starting
+on another thread at that moment, it first waits for that start's sensors to finish starting, usually a
+fraction of a second. When it returns, recording has stopped, the SDK reports `Status.Uninitialized`,
+and the recording will not resume at the next launch, even if the app is killed right after the call.
+For that it saves one small setting to disk before returning, which StrictMode disk checks report; if
+the device cannot save it (for example, its storage is full), the next launch may still resume the
+recording. A recording stopped this way reports
+`Status.RecordingStopped` and `Status.Uninitialized` at once, so a status observer may see only
+`Uninitialized`: treat an `Uninitialized` that follows `RecordingInProgress` as the end of the
+recording too. The rest of the cleanup finishes in the background; an `init()` called meanwhile
+returns right away and waits for it by itself, for at most about 15 seconds.
+
+`deinitialize()` returns before the readings recorded up to the call are saved, which happens in the
+background within a few seconds. An app that ends its own process right after the call (for example,
+to restart after logout) should let it run for a few seconds first.
+
 ---
 
 ## SDK Status
@@ -369,7 +390,7 @@ Monitor the SDK state using `observeSdkStatus()`:
 sdk.observeSdkStatus().collect { status ->
     when (status) {
         is Status.Uninitialized -> {
-            // SDK not yet initialized
+            // SDK not yet initialized, or deinitialized
         }
         is Status.Initializing -> {
             // SDK is fetching config from server
@@ -384,7 +405,7 @@ sdk.observeSdkStatus().collect { status ->
             val deviceId = status.deviceId
         }
         is Status.RecordingStopped -> {
-            // Recording has stopped
+            // Recording has stopped (deinitialize() may report only Uninitialized)
         }
         is Status.DelayedStart -> {
             // Waiting for auto-start delay
@@ -403,7 +424,8 @@ sdk.observeSdkStatus().collect { status ->
             val message = status.message
         }
         is Status.AskForPermissions -> {
-            // SDK requesting permissions
+            // SDK is ready, and requests permissions the configuration needs.
+            // Also reported during a recording, which continues: check isRecordingInProgress().
             val permissions = status.permissions
         }
     }
@@ -521,7 +543,7 @@ fun checkSdkHealth() {
 | `getDeviceId()` | `String?` | Get unique device identifier |
 | `logMetadata(standardMetadata)` | `Unit` | Log standardized event metadata |
 | `logMetadata(payload)` *(deprecated)* | `Unit` | Log custom metadata map |
-| `setAllSensorsEnabled(enabled)` | `Unit` | Enable/disable all sensors |
+| `setAllSensorsEnabled(enabled)` | `Unit` | Record from all sensors (`true`) or the configured set (`false`) |
 | `getAllSensorsEnabled()` | `Boolean` | Get sensor enable status |
 | `getActiveConfig()` | `Configuration?` | Get active backend configuration |
 | `getUploadStatistics()` | `UploadStatistics?` | Get upload stats |
