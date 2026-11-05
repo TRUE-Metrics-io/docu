@@ -188,6 +188,10 @@ sdk.observeSdkStatus().collect { status ->
 | `Status.Error(MISSING_NOTIFICATION_PERMISSION)` | Android 13+ notification permission not granted | Request `POST_NOTIFICATIONS`, then re-init. |
 | `Status.Error(FOREGROUND_SERVICE_START_REFUSED)` | **Transient.** `init()` ran in the background, where Android refuses to start a foreground service | None. The SDK retries when your UI comes to the foreground, and a `startRecording()` made in the meantime runs then. If your app has no UI, call `deinitialize()` and then `init()` again from an exempt receiver, then `startRecording()` again — `deinitialize()` drops a pending request. |
 
+`init()` itself throws an `IllegalStateException` when Android cannot bind the SDK's service, for
+example before the device has been unlocked for the first time after a restart. Catch it and call
+`init()` again later, for example once the device is unlocked.
+
 ---
 
 ## Configuration
@@ -374,7 +378,8 @@ recording. A recording stopped this way reports
 `Status.RecordingStopped` and `Status.Uninitialized` at once, so a status observer may see only
 `Uninitialized`: treat an `Uninitialized` that follows `RecordingInProgress` as the end of the
 recording too. The rest of the cleanup finishes in the background; an `init()` called meanwhile
-returns right away and waits for it by itself, for at most about 15 seconds.
+returns right away and waits for it by itself, for at most about 15 seconds. The SDK's notification
+can stay up for a few seconds after the call, until that cleanup has finished.
 
 `deinitialize()` returns before the readings recorded up to the call are saved, which happens in the
 background within a few seconds. An app that ends its own process right after the call (for example,
