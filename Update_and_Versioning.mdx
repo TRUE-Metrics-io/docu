@@ -1,10 +1,27 @@
-Daily, we generate a new data set, which is synced with your data storage. To give you control about the versioning, a new folder with the creation date as name is used.
+Daily, we generate a new data set, which is synced with your data storage. To give you control about the versioning, each export is written to a new folder named after its creation time in UTC (`YYYY-MM-DD-HH-MM-SS`). Older folders stay in place. Each folder contains only the changes since the previous export, so the newest folder is not a complete data set: process every folder you have not imported yet, in timestamp order.
+
+For the AWS and Google Cloud exports, the folder structure looks like this:
+
+```
+s3://true-shared-YOURCOMPANY/
+├── truemetrics-positions/incremental/
+│   ├── 2026-11-04-00-12-26/
+│   └── 2026-11-05-00-12-51/
+│       ├── entrance_*.parquet
+│       ├── parkingplace_*.parquet
+│       └── schema_*.json
+└── truemetrics-stops/incremental/
+    ├── 2026-11-04-00-11-34/
+    └── 2026-11-05-00-12-51/
+        ├── stops_*.parquet
+        └── schema_*.json
+```
 
 ### Incremental Export for Positions
-truemetrics provides daily incremental exports to keep your system updated with the latest position data. Each day, you will receive a Parquet file containing the changes detected by truemetrics, including updates to entrances and parking places.
+truemetrics provides daily incremental exports to keep your system updated with the latest position data. Each day, you will receive two Parquet files, one for entrances and one for parking places, containing the changes detected by truemetrics.
 
 #### Contents of the Export
-The daily Parquet file includes:
+The daily Parquet files include:
 
 * Newly detected entrances or parking places
 * Updated positions, e.g., more reliable location data
@@ -29,16 +46,16 @@ Otherwise, insert or update the location in your database.
 Ensure that your import process is idempotent and can handle re-processing the same file if needed.
 
 ### Export for Stops KPIS
-For each delivery you have done so far, we provide the associated Stop KPIs for the last day. The folder structure will be 
+For each delivery you have done so far, we provide the associated Stop KPIs, one recording day per export. The stops are in
 
-*s3://true-shared-YOURCOMPANY/truemetrics-stops/incremental/{date}/stops.parquet*
+`s3://true-shared-YOURCOMPANY/truemetrics-stops/incremental/{timestamp}/stops_*.parquet`
 
-The schema of the data can be found here in the same folder as schema file.
+The schema of the data can be found in the same folder as schema file.
 
-*s3://true-shared-YOURCOMPANY/truemetrics-stops/incremental/{date}/schema.json*
+`s3://true-shared-YOURCOMPANY/truemetrics-stops/incremental/{timestamp}/schema_*.json`
 
 
 ### Time delay between recording and export
-We are processing all your deliveries at the end of the day and perform the export of the data on the end of the next day (at around 23:00 am). This results in a delay between delivery and export of 24 hours. 
+The export runs daily at around 00:15 UTC. Stops are exported two days after they were recorded; position changes one day after.
 
-Example: A data export labeled 2024-01-05 will include deliveries up to the end of 2024-01-04. 
+Example: The export in folder `2024-01-05-00-10-00` contains the stops recorded on 2024-01-03 and the position changes from 2024-01-04.
