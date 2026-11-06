@@ -1,6 +1,6 @@
 ---
 title: 'SDK Interface'
-description: 'Overview of the functionality of the Truemetrics Android SDK 1.6.3'
+description: 'Overview of the functionality of the Truemetrics Android SDK 1.7.0'
 ---
 
 ### Setup and Maven Repository
@@ -27,7 +27,7 @@ dependencyResolutionManagement {
 Inside your `build.gradle` add the following dependency:
 
 ```groovy
-implementation 'io.truemetrics:truemetricssdk:1.6.3'
+implementation 'io.truemetrics:truemetricssdk:1.7.0'
 ```
 
 ### Initialize SDK
@@ -47,7 +47,7 @@ class MyApplication : Application() {
 
 ### Custom Foreground Notification
 
-The SDK runs as a foreground service and shows a notification while recording. You can customize this notification using the SDK's notification channel:
+The SDK runs as a foreground service and shows a notification from `init()` until shortly after `deinitialize()`, also while not recording. You can customize this notification using the SDK's notification channel:
 
 ```kotlin
 class CustomNotificationFactory : ForegroundNotificationFactory {
@@ -81,6 +81,9 @@ sdk.observeSdkStatus().collect { status ->
         is Status.Uninitialized -> {
             // SDK not yet initialized
         }
+        is Status.Initializing -> {
+            // SDK is fetching config from server
+        }
         is Status.Initialized -> {
             // SDK initialized, deviceId available
             val deviceId = status.deviceId
@@ -109,7 +112,9 @@ sdk.observeSdkStatus().collect { status ->
             val message = status.message
         }
         is Status.AskForPermissions -> {
-            // SDK requesting permissions
+            // SDK is ready, and requests permissions the configuration needs.
+            // Reported right after Initialized or DelayedStart, so an observer may see only this one.
+            // Also reported during a recording, which continues: check isRecordingInProgress().
             val permissions = status.permissions
         }
     }
@@ -139,7 +144,7 @@ val sdk = TruemetricsSdk.getInstance()
 sdk.startRecording()
 ```
 
-Starting the recording also starts the Foreground service and shows the notification. Recording continues even when the app exits.
+`init()` starts the Foreground service and shows its notification; starting the recording does not change it. Recording continues even when the app exits.
 
 `init()` on its own does not start recording. A recording that was started is resumed automatically the next time the app initializes the SDK, so a restart or an app update does not lose it. To have the SDK start on its own instead, configure `delayAutoStartRecording` — see [Recording lifecycle](/android_native#recording-lifecycle).
 
@@ -153,7 +158,7 @@ Starting the recording also starts the Foreground service and shows the notifica
 sdk.stopRecording()
 ```
 
-Stopping recording also stops the Foreground service and removes the notification.
+Stopping recording does not stop the Foreground service: the notification stays until shortly after `deinitialize()`.
 
 ### Check Recording Status
 

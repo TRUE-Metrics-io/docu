@@ -31,6 +31,7 @@ lifecycleScope.launch {
     sdk.observeSdkStatus().collect { status ->
         when (status) {
             is Status.Initialized -> log(status.deviceId)
+            is Status.AskForPermissions -> sdk.getDeviceId()?.let { log(it) }
             is Status.RecordingInProgress -> log(status.deviceId)
             else -> {}
         }
@@ -57,8 +58,9 @@ with the new key: only data sent under it counts, so test after the switch.
 The whole test takes about 50 to 75 minutes, most of it waiting.
 
 1. On a device that has not recorded earlier that UTC day, wait until the SDK reports
-   `Initialized` (metadata logged before that is lost), then record for 30 minutes, ideally while
-   moving (walking or driving). Finish before 00:00 UTC: the whole UTC day is checked.
+   `Initialized` or `AskForPermissions` (metadata logged before that can be lost), then record for
+   30 minutes, ideally while moving (walking or driving). Finish before 00:00 UTC: the whole UTC
+   day is checked.
 2. During the recording, at about minutes 1, 15 and 29, log 3 test metadata objects with
    `eventType` `integration_test`, the same `test_run_id` (any unique ID) and a `test_index` of
    `1`, `2` and `3`, as shown below. Keep this out of your release build.
