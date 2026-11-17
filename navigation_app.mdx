@@ -107,7 +107,7 @@ truemetrics.navigation://navigate?q=<lat>,<lng>
 `q` must be `<lat>,<lng>`, optionally followed by `(label)`. An address instead of coordinates is
 rejected (no geocoding).
 
-Every optional field below can be an intent extra or a query parameter of the link (URL-encoded); an
+Every field below except `q` can be an intent extra or a query parameter of the link (URL-encoded); an
 extra wins over a parameter of the same name. Extras are strings, except `routing` and
 `simulate` (boolean, or the string `"true"`/`"false"`).
 
@@ -116,9 +116,10 @@ extra wins over a parameter of the same name. Extras are strings, except `routin
   there is no last meter for the stop.
 </ParamField>
 
-<ParamField path="route" type="string (JSON)">
+<ParamField path="route" type="string (JSON)" required>
   The tour and the stop to drive to. Brings the last meter and the address on the card. See
-  [route](#route). Without it, the app drives to `q` without a last meter.
+  [route](#route). Should it be missing or unreadable, the app still drives to `q`, but without a
+  last meter.
 </ParamField>
 
 <ParamField path="returnApp" type="string">

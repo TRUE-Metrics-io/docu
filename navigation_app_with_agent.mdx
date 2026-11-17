@@ -75,11 +75,11 @@ Links (the same as for Google Maps, or the truemetrics scheme):
     google.navigation:q=<lat>,<lng>&mode=d
     truemetrics.navigation://navigate?q=<lat>,<lng>
 
-`q` is `<lat>,<lng>`, optionally followed by `(label)`. Every optional field below can be an intent extra or a URL-encoded query parameter; an extra wins over a parameter of the same name. Extras are strings, except `routing` and `simulate` (boolean, or the string "true"/"false").
+`q` is `<lat>,<lng>`, optionally followed by `(label)`. Every field below except `q` can be an intent extra or a URL-encoded query parameter; an extra wins over a parameter of the same name. Extras are strings, except `routing` and `simulate` (boolean, or the string "true"/"false").
 
 | Field | Meaning |
 | --- | --- |
-| `route` | JSON: the tour and the stop to drive to, see below |
+| `route` (required) | JSON: the tour and the stop to drive to, see below |
 | `returnUri` | Browsable deep link opened to switch back |
 | `returnApp` | Package to switch back to, if there is no `returnUri` |
 | `routing` (boolean, default true) | `false`: no drive, only the stop's last meter and the courier's position |
