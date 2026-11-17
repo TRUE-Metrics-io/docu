@@ -70,10 +70,9 @@ If the app has settings for the navigation app (e.g. Google Maps vs Waze), propo
 
 ## Handover reference
 
-Links (the same as for Google Maps, or the truemetrics scheme):
+Links: the same as for Google Maps (`google.navigation:q=<lat>,<lng>&mode=d`, the fields below as intent extras), or the truemetrics scheme with every field a query parameter. A full example:
 
-    google.navigation:q=<lat>,<lng>&mode=d
-    truemetrics.navigation://navigate?q=<lat>,<lng>
+    truemetrics.navigation://navigate?q=55.654436,12.361784&returnApp=com.example.scanner&route=%7B%22stops%22%3A%5B%7B%22ID%22%3A%22%3Caddress_id%3E%22%2C%22line1%22%3A%22Gymnasievej%2039%22%2C%22line2%22%3A%22Planned%20Arrival%2014%3A22%22%7D%2C%7B%22ID%22%3A%22%3Caddress_id%3E%22%2C%22line1%22%3A%22%C3%98sterbyvejen%2033%22%2C%22line2%22%3A%22Planned%20Arrival%2014%3A41%22%7D%5D%2C%22next_stop%22%3A1%7D
 
 `q` is `<lat>,<lng>`, optionally followed by `(label)`. Every field below except `q` can be an intent extra or a URL-encoded query parameter; an extra wins over a parameter of the same name. Extras are strings, except `simulate` (boolean, or the string "true"/"false").
 

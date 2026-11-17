@@ -14,9 +14,8 @@ shows the walk to the entrance, and switches back to your app on arrival.
 
 ## What changes in your app
 
-Three lines on the intent you already send. Everything the truemetrics app needs beyond the
-coordinate is optional, and Google Maps ignores it, so the same call works whether or not the
-truemetrics app is installed.
+Three lines on the intent you already send. Google Maps ignores everything beyond the coordinate,
+so the same call works whether or not the truemetrics app is installed.
 
 <CodeGroup>
 ```kotlin Today (Google Maps)
@@ -97,11 +96,17 @@ through your MDM. On first start it asks for location and, at the first drive, f
 
 ## The handover
 
-The same link a courier app sends to Google Maps:
+The same link a courier app sends to Google Maps, `google.navigation:q=<lat>,<lng>&mode=d`, with
+the fields below as intent extras. Or, as a full link with every field a query parameter:
 
+```text
+truemetrics.navigation://navigate?q=55.654436,12.361784&returnApp=com.example.scanner&route=%7B%22stops%22%3A%5B%7B%22ID%22%3A%22%3Caddress_id%3E%22%2C%22line1%22%3A%22Gymnasievej%2039%22%2C%22line2%22%3A%22Planned%20Arrival%2014%3A22%22%7D%2C%7B%22ID%22%3A%22%3Caddress_id%3E%22%2C%22line1%22%3A%22%C3%98sterbyvejen%2033%22%2C%22line2%22%3A%22Planned%20Arrival%2014%3A41%22%7D%5D%2C%22next_stop%22%3A1%7D
 ```
-google.navigation:q=<lat>,<lng>&mode=d
-truemetrics.navigation://navigate?q=<lat>,<lng>
+
+with `route` decoded:
+
+```json
+{"stops":[{"ID":"<address_id>","line1":"Gymnasievej 39","line2":"Planned Arrival 14:22"},{"ID":"<address_id>","line1":"Østerbyvejen 33","line2":"Planned Arrival 14:41"}],"next_stop":1}
 ```
 
 `q` must be `<lat>,<lng>`, optionally followed by `(label)`. An address instead of coordinates is
