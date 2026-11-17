@@ -45,7 +45,7 @@ IMPORTANT, the IDs: look them up in the truemetrics SDK metadata code; do not gu
 
 Fallback: start the intent in a try/catch; on `ActivityNotFoundException` start it again without the package (Google Maps as before, it ignores the extra fields). Do not add a `<queries>` element only for this.
 
-Do not send `simulate`, `simulationStart` (demo only) or `lastMeterOnly` unless I ask for it (`lastMeterOnly = true`: no drive, only the stop's last meter and the courier's position).
+Do not send `simulate`, `simulationStart` (demo only) or `routing` unless I ask for it (`routing = false`: no drive, only the stop's last meter and the courier's position; left out, the app drives).
 
 Confirm with me: the field mapping from this app's stop and tour models, and the call sites to change.
 
@@ -69,14 +69,14 @@ Links (the same as for Google Maps, or the truemetrics scheme):
     google.navigation:q=<lat>,<lng>&mode=d
     truemetrics.navigation://navigate?q=<lat>,<lng>
 
-`q` is `<lat>,<lng>`, optionally followed by `(label)`. Every optional field below can be an intent extra or a URL-encoded query parameter; an extra wins over a parameter of the same name. Extras are strings, except `lastMeterOnly` and `simulate` (boolean, or the string "true").
+`q` is `<lat>,<lng>`, optionally followed by `(label)`. Every optional field below can be an intent extra or a URL-encoded query parameter; an extra wins over a parameter of the same name. Extras are strings, except `routing` and `simulate` (boolean, or the string "true"/"false").
 
 | Field | Meaning |
 | --- | --- |
 | `route` | JSON: the tour and the stop to drive to, see below |
 | `returnUri` | Browsable deep link opened to switch back |
 | `returnApp` | Package to switch back to, if there is no `returnUri` |
-| `lastMeterOnly` (boolean) | No drive: only the stop's last meter and the courier's position |
+| `routing` (boolean, default true) | `false`: no drive, only the stop's last meter and the courier's position |
 | `simulate` (boolean), `simulationStart` ("lat,lng") | Demo only: a simulated drive |
 
 `route`, up to 200 stops:

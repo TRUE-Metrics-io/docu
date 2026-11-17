@@ -109,8 +109,8 @@ truemetrics.navigation://navigate?q=<lat>,<lng>
 rejected (no geocoding).
 
 Every optional field below can be an intent extra or a query parameter of the link (URL-encoded); an
-extra wins over a parameter of the same name. Extras are strings, except `lastMeterOnly` and
-`simulate` (boolean, or the string `"true"`).
+extra wins over a parameter of the same name. Extras are strings, except `routing` and
+`simulate` (boolean, or the string `"true"`/`"false"`).
 
 <ParamField path="q" type="string" required>
   The stop: `<lat>,<lng>` in WGS84 degrees, as for Google Maps. Used for routing and the map when
@@ -133,9 +133,11 @@ extra wins over a parameter of the same name. Extras are strings, except `lastMe
   ignored.
 </ParamField>
 
-<ParamField path="lastMeterOnly" type="boolean" default="false">
-  No drive: the app shows only the stop's last meter and the courier's position, as the module does
-  with `routing = false` ([2A](/navigation_module)). For a courier who knows the way but not the door.
+<ParamField path="routing" type="boolean" default="true">
+  `false`: no drive, the app shows only the stop's last meter and the courier's position, as the
+  module does with `routing = false` ([2A](/navigation_module)). For a courier who knows the way but
+  not the door. Left out, the app drives there, as Google Maps does (the module's default is the
+  other way round).
 </ParamField>
 
 ### `route`
@@ -200,7 +202,7 @@ shown at a desk or in a customer meeting without driving there.
 
 <ParamField path="simulate" type="boolean" default="false">
   `true`: the app drives along the route by itself instead of following GPS, with arrival and the
-  switch back as in a real drive. No rerouting. Ignored with `lastMeterOnly`.
+  switch back as in a real drive. No rerouting. Ignored with `routing=false`.
 </ParamField>
 
 <ParamField path="simulationStart" type="string">
