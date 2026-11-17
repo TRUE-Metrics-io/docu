@@ -5,14 +5,15 @@ description: 'Parking, entrance, waypoint, walk path and building as data, drawn
 ---
 
 With option 1 you keep your own map and your own design, in the courier app, a dispatcher dashboard
-or anywhere else. truemetrics delivers the last meter of each stop as data:
+or anywhere else. truemetrics delivers the last meter of each address as data, learned from all
+deliveries to it. New deliveries count after the next nightly merge run.
 
 | Element | Description |
 | --- | --- |
-| **Entrance** | The detected door / delivery point for the address. |
+| **Entrance** | The door couriers use at the address. |
 | **Parking** | Where couriers park the vehicle. |
-| **Waypoint** | Where the approach leaves the street: the point to route to. |
-| **Walk path** | The detected walking route from parking to entrance. |
+| **Waypoint** | The street point the courier is routed to, where the approach to the parking starts. The way from the waypoint to the parking is routed for driving. truemetrics learns it from the drives; your own is the `waypointLatitude` / `waypointLongitude` you can send in [metadata](/metadata). |
+| **Walk path** | The way on foot from the parking to the entrance. |
 | **Building** | The building footprint the entrance belongs to (when available). |
 
 All coordinates are in **EPSG:4326** (WGS84 longitude/latitude). For how to draw them so couriers
@@ -57,30 +58,34 @@ delivery time.
 ## 1B · Data from the truemetrics REST API
 
 Your app (or your backend) asks the [Last Meter Visualisation API](/Lastmeter_API_Reference) for one
-stop and gets back exactly that data, ready to draw:
+stop by its address identifiers and gets back exactly that data, ready to draw:
 
-* a **GeoJSON `FeatureCollection`** you can drop straight onto a [MapLibre](https://maplibre.org/)
-  or [Mapbox](https://www.mapbox.com/) map. The styling hints (colours, line widths, dashes) map
-  1:1 to map layer styles, and
+* a **GeoJSON `FeatureCollection`** (with `geojson=true`) you can drop straight onto a
+  [MapLibre](https://maplibre.org/) or [Mapbox](https://www.mapbox.com/) map. The styling hints
+  (colours, line widths, dashes) map 1:1 to map layer styles, and
 * optionally a **rendered PNG image** (`raster`), so you can show a thumbnail without running a
-  map renderer yourself: either transparent (to overlay on your own map) or on a street basemap.
+  map renderer yourself: transparent or on a street basemap.
+
+<Frame caption="One answer, layer by layer, with the property that draws each layer.">
+  <img src="/images/motion/lastmeter_layers.svg" alt="Animation: a small map fills layer by layer with the building footprint (point_type building), parking P (point_type parking), entrance E (point_type entrance), the dashed walk path (line_type parking_to_entrance), the driven approach (line_type waypoint_to_parking), the waypoint W (point_type waypoint, waypoint_style marker) and an optional red reference dot (point_type taskpoint)." />
+</Frame>
 
 <img height="260" noZoom src="/images/lastmeter_basemap.png" />
 
-**Choose 1B when** you want the newest data per stop with the least work on your side, or a picture
+**Choose 1B when** you want the latest data per stop with the least work on your side, or a picture
 of the stop in an email, report, ticket or dashboard.
 
 Typical uses:
 
-* Plot the last-meter geometry of a stop in your own driver app or dashboard.
+* Plot the last meter of a stop in your own driver app or dashboard.
 * Embed a small map thumbnail of a stop in an email, report or ticket.
-* Give dispatchers a quick visual of *where exactly* a parcel was delivered.
+* Show dispatchers where couriers park and which door they use at an address.
 
 ### Authentication
 
 Every request is authenticated with your **`x-api-key`**. The key identifies your account, so you
-only ever receive your own data: there is no account or customer parameter in the request. Your
-key and the base URL are provided by your truemetrics contact.
+only ever receive your own data: there is no account or customer parameter in the request. See
+[API keys](/api_keys) for which key you need.
 
 <Info>
 The identifiers you pass are the same address identifiers you send to truemetrics as metadata
@@ -95,8 +100,8 @@ Next: the [API reference](/Lastmeter_API_Reference) and [examples](/Lastmeter_Ex
 | | 1A · own backend | 1B · REST API |
 | --- | --- | --- |
 | Data in your own systems | Yes, a full copy | No, fetched per stop |
-| Freshness | Daily | Current at request time |
-| At delivery time | No request to truemetrics | One request per stop (cacheable for an hour) |
+| Freshness | Daily export after the nightly merge | After the nightly merge (answers cached for up to an hour) |
+| At delivery time | No request to truemetrics | One request per stop |
 | Rendering | Your own styling | Styling hints included, or a ready PNG |
 | Work on your side | Import, storage, delivery to devices, map | Map, one HTTP call |
 

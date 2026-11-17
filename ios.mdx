@@ -1,8 +1,23 @@
 ---
-title: 'IOS Integration'
-description: 'Still int progress.'
+title: 'iOS'
+description: 'truemetrics records on Android only. There is no iOS SDK.'
 ---
 
-Most of the truemetrics customer's users have an Android system - nevertheless, we also have seen that many couriers prefer to use iPhones especially when a bring-your-own-device strategy are implemented. That's why we decided to put the IOS version of our SDK on the roadmap for Q2/2025. 
+There is no truemetrics SDK for iOS, and truemetrics does not record on iPhones or other iOS devices.
 
-If this topic is a high priority for you - let us know.
+In a cross-platform app (Flutter, React Native), keep the app working on iOS as it is and guard every
+truemetrics call with a platform check, so it runs on Android only and is a no-op on iOS. In Flutter:
+
+```dart
+import 'dart:io' show Platform;
+
+if (Platform.isAndroid) {
+  await sdk.startRecording();
+}
+```
+
+In React Native, check `Platform.OS === 'android'`. Do not add iOS permissions or background modes for
+truemetrics.
+
+If iOS matters for your couriers, for example with a bring-your-own-device setup, contact
+[info@truemetrics.io](mailto:info@truemetrics.io).

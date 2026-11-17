@@ -1,50 +1,206 @@
 ---
 title: 'Flutter Integration'
-description: 'Start the integration in less than 5 minutes.'
+description: 'Add the truemetrics SDK to a Flutter app with the truemetrics_flutter_sdk plugin (Android only).'
 ---
 
-Using truemetrics Flutter plugin could be easier. 
-See here more on how it [works](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository)
- 
+The Flutter plugin [`truemetrics_flutter_sdk`](https://pub.dev/packages/truemetrics_flutter_sdk) wraps the
+native truemetrics Android SDK. Version 0.0.13 wraps native SDK 1.6.0. truemetrics records on Android only:
+see [iOS](/ios) for what that means for a cross-platform app.
 
-To use this plugin, just add `truemetrics_flutter_sdk` as a dependency in your `pubspec.yaml` file:
+If you integrate with an AI coding agent, the [agent prompt](/with_agent) covers the same steps in more detail.
+
+## 1. Add the plugin
+
+Add the plugin to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  truemetrics_flutter_sdk: ^0.0.12
+  truemetrics_flutter_sdk: ^0.0.13
 ```
+
+<Warning>
+  Use 0.0.13 or newer. Older versions start recording as soon as the SDK is initialized. For `0.0.x`
+  versions the caret allows no other version, so check [pub.dev](https://pub.dev/packages/truemetrics_flutter_sdk)
+  and raise the version by hand.
+</Warning>
+
+The native SDK comes from the truemetrics Maven repository. Add it to `allprojects { repositories }` in
+`android/build.gradle` (or `android/build.gradle.kts`):
+
+```gradle
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
+        maven {
+            url "https://github.com/TRUE-Metrics-io/truemetrics_android_SDK_p_maven/raw/main"
+        }
+    }
+}
+```
+
+If your app declares its repositories in `dependencyResolutionManagement { repositories }` in
+`android/settings.gradle(.kts)`, add it there instead. Do not add the native SDK as a dependency yourself:
+the plugin pins its version. The minimum Android version is API 24 (`minSdk 24`).
+
+## 2. Permissions
+
+The SDK declares its permissions and its recording service in its own manifest, and they merge into your
+app automatically. Make sure your app removes none of them (`tools:node="remove"`). You can check the
+merged result in `build/app/outputs/logs/manifest-merger-*-report.txt` after a build.
+
+Request the runtime permissions before recording starts, for example right after login: location first,
+then background location, plus activity recognition, phone state and notifications. Before the first
+location request, show a dialog explaining that the app collects location data in the background, also
+when it is closed or not in use, and what for. Google Play requires this disclosure.
 
 <Note>
-  **Google Play foreground-service declaration:** the underlying native SDK's recording service declares the
-  **`location`** and **`dataSync`** foreground-service types (previously `location` + `specialUse`). In the
-  Play Console foreground-service-types form, declare **"Location"** and **"Data sync"** for the Truemetrics
-  recording service. If your existing declaration listed **"Special use"**, replace it with **"Data sync"**
-  (keep **"Location"**).
+  **Google Play foreground-service declaration:** the SDK's recording service declares the **`location`** and
+  **`dataSync`** foreground-service types. In the Play Console foreground-service-types form, declare
+  **"Location"** and **"Data sync"** for the truemetrics recording service. If your existing declaration
+  listed **"Special use"**, replace it with **"Data sync"** (keep **"Location"**). Your app also needs the
+  background location declaration.
 </Note>
 
-Go for the initialize of the SDK
-```
+## 3. Initialize the SDK
+
+truemetrics does not record on iOS, so guard every call with `Platform.isAndroid`. On iOS the calls are
+then a safe no-op.
+
+```dart
+import 'dart:io' show Platform;
+
+import 'package:truemetrics_flutter_sdk/truemetrics_flutter_sdk.dart';
+
 final sdk = TruemetricsFlutterSdk();
-final config = TruemetricsConfig(config: {
-    'apiKey': 'your-api-key',
-    'debug': true
-    });
-await sdk.initialize(config);
+var initialized = false;
+
+Future<void> initTruemetrics(String apiKey) async {
+  if (!Platform.isAndroid || initialized) return;
+  try {
+    await sdk.initialize(TruemetricsConfig(config: {'apiKey': apiKey}));
+    initialized = true;
+  } catch (e) {
+    // Can fail while the app is in the background: try again on the next
+    // AppLifecycleState.resumed.
+  }
+}
 ```
 
-perform start recording
-```
-await sdk.startRecording();
+Initialize after login and on every app start while a user is still logged in (once the stored session is
+restored). A recording that was started and not stopped resumes on the next initialization, also after a
+crash, an update or a reboot. Without that initialization, recording stays off until the next login.
+
+- Catch any exception from `initialize`, not only `PlatformException`. Native SDK 1.6.0 can throw when the
+  app is in the background; call `initialize` again on the next `AppLifecycleState.resumed`.
+- Never initialize from a background isolate (FCM background handler, WorkManager).
+- Leave `delayAutoStartRecording` out of the config, even where the plugin's README or example sets it.
+  Without it, recording starts only when you call `startRecording()`.
+- Keep your own `initialized` flag as above. `isInitialized()` and the SDK status are not reliable for this.
+
+Your API key comes from truemetrics: see [API keys](/api_keys).
+
+## 4. Listen to the status
+
+Register the listener once, in one place. Each call to `setStatusListener` replaces the previous listener.
+
+```dart
+var ready = false;
+
+void listenToTruemetrics() {
+  if (!Platform.isAndroid) return;
+  sdk.setStatusListener(
+    onStateChange: (event) {
+      // event.state is a TruemetricsState, e.g. initialized, recordingInProgress,
+      // recordingStopped. event.deviceId is set with initialized and recordingInProgress.
+      if (event.state != TruemetricsState.uninitialized &&
+          event.state != TruemetricsState.initializing) {
+        ready = true;
+      }
+    },
+    onError: (errorCode, message) {
+      // Errors arrive only here. Log them.
+    },
+    onPermissionsRequired: (permissions) {
+      ready = true;
+      // Request the listed Android permissions.
+    },
+  );
+}
 ```
 
-or Log metadata
-```
-await sdk.logMetadata({'key': 'value'});
-```
+The SDK is ready from the first `initialized`, `recordingInProgress`, `recordingStopped`, `delayedStart`,
+`trafficLimitReached` or `readingsDatabaseFull` status after each `initialize`, or from any
+`onPermissionsRequired` call (also with an empty list), until `deInitialize()`. Set `ready` back to `false`
+when you call `deInitialize()`.
 
-and finally stop recording
-```
+## 5. Start and stop recording
+
+```dart
+if (!await sdk.isRecordingInProgress()) {
+  await sdk.startRecording();
+}
+
+// When the route is finished:
 await sdk.stopRecording();
 ```
 
-and you are done, was easy right :) 
+- Call `startRecording()` and `stopRecording()` only once the SDK is ready (section 4). If the trigger comes
+  earlier, hold the call and make it then; do not drop it.
+- Start once when the route starts and stop once when it ends. Do not stop and restart per stop, per screen
+  or when the app goes to the background.
+- Do not start recording on a plain app start: a started recording resumes on `initialize` by itself.
+
+## 6. Log metadata
+
+Log one event for each delivery or pickup attempt, whatever the outcome, at the moment the driver
+finalizes it in the app:
+
+```dart
+await sdk.logStandardMetadata(StandardMetadata(
+  eventTime: DateTime.now().toUtc().toIso8601String(), // e.g. 2026-11-17T09:41:07.000Z
+  eventType: 'delivery', // or 'pickup'
+  deliveryId: 'D-48213',
+  tourId: 'T-0815',
+  waypointLatitude: '52.52003',
+  waypointLongitude: '13.40495',
+  referenceLatitude: '52.52021',
+  referenceLongitude: '13.40512',
+  address: 'Example Street 1, 10115 Berlin',
+  extra: {
+    'address_id': 'A-99120', // required
+    'delivery_state': 'success', // success, failed or special, plus your raw code
+    'delivered_to_neighbor': 'false',
+  },
+));
+```
+
+- All nine standard fields are required in Dart. Pass `''` for fields you do not have. `extra` is a
+  `Map<String, String>`.
+- `eventTime` is ISO 8601 with a time zone: `Z` or an offset such as `+01:00`.
+- `address_id` is required: truemetrics returns parking places and entrances keyed by this ID.
+- Set `delivered_to_neighbor` to `true` when the parcel went to any other address than the recipient's.
+- Metadata logged before the SDK is ready is lost. Queue events in local storage until it is ready, then
+  send them in order.
+- `logMetadata(Map)` is deprecated; use `logStandardMetadata`.
+
+See [Metadata](/metadata) for all fields and `extra` keys.
+
+## 7. Log out
+
+Call `deInitialize()` on logout. It stops a running recording. In 0.0.13 it blocks the Android main thread,
+so the UI can freeze for a few seconds; this cannot be avoided from Dart, so await it as usual. After it
+has returned, initialize again on the next login.
+
+```dart
+await sdk.deInitialize();
+initialized = false;
+ready = false;
+```
+
+## Next steps
+
+- [Verify the integration](/verify_integration) with a 30-minute test recording.
+- Reference implementation: the example app in the plugin's
+  [GitHub repository](https://github.com/TRUE-Metrics-io/truemetrics_flutter_p).
+- Questions: [info@truemetrics.io](mailto:info@truemetrics.io).

@@ -1,0 +1,29 @@
+---
+title: 'API keys'
+description: 'Which key you need for which part of truemetrics, and how to get it.'
+---
+
+truemetrics issues API keys per customer. A key identifies your account: you only see your own
+devices and your own data. Each key is enabled for specific services, and one key can be enabled for
+several. Request keys, or another service on an existing key, at
+[info@truemetrics.io](mailto:info@truemetrics.io).
+
+| You want to | Key | Where it goes |
+|---|---|---|
+| Record with the SDK | SDK API key | `TruemetricsSdk.init` in your courier app ([Android Native](/android_native), [Flutter](/flutter)) |
+| Check a test recording | The same SDK API key, enabled for the check | `x-api-key` header of `/V1/testresult` ([Verify your integration](/verify_integration)) |
+| Get the last meter of an address | An API key enabled for last meter | `x-api-key` header of `/V1/lastmetervisualization` ([API reference](/Lastmeter_API_Reference)) |
+| Use the truemetrics module in your app | An API key enabled for the module | `TruemetricsNavigation.init` ([module](/navigation_module)) |
+| Use the truemetrics navigation app | None in your app | truemetrics sets the app up ([navigation app](/navigation_app)) |
+| Receive the daily export | No API key | Read access to your truemetrics bucket, or your SFTP server, set up together ([Export setup](/Architecture_of_Export)) |
+
+A `403` from any endpoint means the key is missing, wrong, or not enabled for that endpoint.
+
+## Keeping keys safe
+
+- Keep keys in your build configuration or secrets store (a Gradle property, `local.properties`,
+  CI secrets), never in source control.
+- A key in an app can be read from the installed app. That is expected for the SDK key, which only
+  uploads data to your account. Keys that read data, such as the last meter key, belong in the apps
+  and backends that need them, not in public samples.
+- If a key leaked, ask us for a new one; the old one is then switched off.

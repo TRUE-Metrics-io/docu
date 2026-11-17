@@ -9,27 +9,29 @@ description: 'Endpoint, parameters and response contract.'
 GET https://geodata.truemetrics.cloud/V1/lastmetervisualization
 ```
 
-Returns a GeoJSON `FeatureCollection` for **one delivery stop**, optionally with a rendered PNG.
-The base URL is provided by your truemetrics contact.
+Returns a GeoJSON `FeatureCollection` for **one stop**, optionally with a rendered PNG. The data is
+the last meter learned for the stop's address identifiers, merged from all deliveries there; new
+deliveries count after the next nightly merge run. The base URL is provided by your truemetrics
+contact.
 
 ## Request
 
 ### Query parameters
 
-A request describes a single stop, addressed by up to two address identifiers — the **entrance**
+A request describes a single stop, addressed by up to two address identifiers: the **entrance**
 and the **parking**. They may be the **same** identifier (one address that has both) or **two
-different** identifiers (many systems store the entrance and parking under separate address ids).
-**At least one** of them must be provided.
+different** identifiers (many systems store the entrance and parking under separate address IDs).
+**At least one** of them must be provided, each at most 256 characters long.
 
 <ParamField query="identifier_entrance" type="string">
   The address identifier (the `id_address` / merge id you send as metadata) used to look up the
-  **entrance** — and its **building** footprint. Optional, but at least one of
+  **entrance** and its **building** footprint. Optional, but at least one of
   `identifier_entrance` / `identifier_parking` is required.
 </ParamField>
 
 <ParamField query="identifier_parking" type="string">
   The address identifier used to look up the **parking** and the **waypoint** (these two share the
-  same id). Optional, but at least one of `identifier_entrance` / `identifier_parking` is required.
+  same ID). Optional, but at least one of `identifier_entrance` / `identifier_parking` is required.
 </ParamField>
 
 <ParamField query="raster" type="boolean" default="false">
@@ -37,33 +39,44 @@ different** identifiers (many systems store the entrance and parking under separ
   block. Accepted truthy values: `true`, `1`, `yes`, `on`.
 </ParamField>
 
+<ParamField query="width" type="integer" default="640">
+  Width of the PNG in pixels, from `64` to `1280`. Values outside are clamped; a value that is not
+  a number falls back to the default.
+</ParamField>
+
+<ParamField query="height" type="integer" default="480">
+  Height of the PNG in pixels, from `64` to `1280`, handled like `width`.
+</ParamField>
+
 <ParamField query="basemap" type="boolean" default="false">
-  Only relevant together with `raster=true`. When `true`, the PNG is drawn on a **street basemap**;
-  when `false` the PNG has a **transparent** background so you can overlay it on your own map.
+  Only relevant together with `raster=true`. When `true`, the PNG is drawn on a **street basemap**
+  (see [the rendered image](#the-rendered-image) for attribution); when `false` the PNG has a
+  **transparent** background.
 </ParamField>
 
 <ParamField query="building" type="boolean" default="true">
-  Draw the snapped **building footprint** highlight under the entrance. **On by default** — pass
-  `building=false` to suppress it.
+  Draw the snapped **building footprint** highlight under the entrance. **On by default**; pass
+  `building=false` to leave it out.
 </ParamField>
 
 <ParamField query="geojson" type="boolean" default="false">
-  Include the GeoJSON `features` array in the response. **Off by default** — pass `geojson=true`
+  Include the GeoJSON `features` array in the response. **Off by default**; pass `geojson=true`
   to receive the vector geometry. The `type` / `metadata` / `view` envelope (and the `raster`
   block, when requested) is always returned, so if you only need the rendered image you can request
   `raster=true` alone and keep the payload small.
 </ParamField>
 
 <ParamField query="reference" type="boolean" default="false">
-  When `true`, also plot your supplied **reference location** ("taskpoint") as a small red point,
-  so you can compare the *planned* location against the *detected* entrance. Available for accounts
-  that send a reference coordinate with their metadata.
+  When `true`, also plot your **reference location** ("taskpoint", the `referenceLatitude` /
+  `referenceLongitude` you send in [metadata](/metadata)) as a small red point, so you can compare
+  the *planned* location against the *learned* entrance. Enabled per account on request
+  ([info@truemetrics.io](mailto:info@truemetrics.io)); for other accounts the parameter has no effect.
 </ParamField>
 
 ### Headers
 
 <ParamField header="x-api-key" type="string" required>
-  Your API key. Identifies your account; you only receive your own data.
+  Your API key. Identifies your account; you only receive your own data. See [API keys](/api_keys).
 </ParamField>
 
 ## Response
@@ -76,37 +89,66 @@ A standard GeoJSON `FeatureCollection` with two extra top-level blocks, `metadat
 </ResponseField>
 
 <ResponseField name="features" type="array">
-  The map features — see [Feature types](#feature-types) below. Returned **only when
+  The map features; see [Feature types](#feature-types) below. Returned **only when
   `geojson=true`** (off by default); otherwise it is an empty array. Even with `geojson=true` it
   may be empty when the stop has no data yet (a normal `200`, not an error).
 </ResponseField>
 
 <ResponseField name="metadata" type="object">
-  `{ "mode": "default", "system": "EPSG:4326", "waypoint_style": "marker" }` — the coordinate
-  reference system of all geometry, and how your account draws the waypoint:
-  `"marker"` (a waypoint point at the end of a solid `waypoint_to_parking` line) or
+  `{ "mode": "default", "system": "EPSG:4326", "waypoint_style": "marker" }`: the coordinate
+  reference system of all geometry, and how the PNG draws the waypoint, set per account:
+  `"marker"` (a waypoint marker at the start of a solid `waypoint_to_parking` line) or
   `"faded"` (no waypoint marker; the `waypoint_to_parking` line fades out toward the
-  waypoint, see `line_fade`).
+  waypoint, see `line_fade`). `features` contains the waypoint point either way; for your own
+  map, take the value as a hint.
 </ResponseField>
 
 <ResponseField name="view" type="object | null">
-  A suggested camera fitted to all points: `{ center: { lat, lon }, zoom, orientation,
-  position_fixed, zoomable }`. `null` when the collection is empty.
+  A suggested camera fitted to every point, path vertex and building corner:
+  `{ center: { lat, lon }, zoom, orientation, position_fixed, zoomable }`, with `center` the middle
+  of that box and `zoom` a whole number from 1 to 18. `null` when the stop has no data.
 </ResponseField>
 
 <ResponseField name="raster" type="object">
-  Present only when `raster=true` and the collection is non-empty:
+  Present only when `raster=true` and the stop has data (with or without `geojson=true`):
   `{ image, width, height, bbox, basemap }`, where `image` is a `data:image/png;base64,…`
-  data-URI, `bbox` is `[minLon, minLat, maxLon, maxLat]`, and `basemap` indicates whether a street
-  basemap was drawn.
+  data-URI, `width` and `height` are its size in pixels, `bbox` is `[minLon, minLat, maxLon, maxLat]`
+  of the points and line vertices (not of the image), and `basemap` is `true` when a street basemap
+  was asked for and is available. See [the rendered image](#the-rendered-image).
 </ResponseField>
+
+### The rendered image
+
+**Fit.** The image is centred on the middle of `bbox`. `bbox` covers the points (including the
+waypoint and taskpoint) and the line vertices, not the building polygon, which can reach past the
+edge of the image. The geometry is scaled to fill 64 % of the width or of the height, whichever
+is tighter, so at least 18 % of the image stays clear on each side of the tighter axis and more
+on the other:
+
+* **Transparent** (`basemap=false`): a flat projection with the same scale in metres on both axes,
+  at most 8 pixels per metre, so a very small stop stays smaller in the middle.
+* **Basemap** (`basemap=true`): Web Mercator at the (fractional) zoom that gives this fit, at most
+  zoom 22; a stop that is a single point is shown at zoom 18.
+
+`bbox` is therefore not the extent of the image: used as the image's bounds, it misplaces the
+image. For a map of your own, draw the GeoJSON.
+
+**Attribution.** The basemap comes from Mapbox (`streets-v12`) and carries the Mapbox logo and
+"© Mapbox © OpenStreetMap" in its corners. Keep both visible wherever you show the image; do not
+crop or cover them.
+
+**Fallbacks.** Both come back as a `200`:
+
+* If the basemap cannot be fetched, the image is drawn transparent with the transparent fit, while
+  `basemap` still says `true`. A transparent corner pixel tells the two apart.
+* If the image cannot be rendered, the answer has no `raster` block; the rest is as requested.
 
 ## Feature types
 
 Every feature carries `properties.object_type` (`point` | `line` | `polygon`), the `identifier`
 it came from, and styling hints that map directly to map layer styles.
 
-### Point — entrance / parking / waypoint
+### Point: entrance, parking, waypoint
 
 | Property | Type | Description |
 | --- | --- | --- |
@@ -116,28 +158,27 @@ it came from, and styling hints that map directly to map layer styles.
 | `marker_size` | number | Marker radius → `circle-radius` (the taskpoint is a small dot) |
 | `icon` | string | Icon name for the marker (absent for the taskpoint, which is a plain dot) |
 
-### Line — walking path / waypoint leg
+### Line: walk path and approach
 
-Lines are the **stored paths** computed by the truemetrics merge pipeline, routed over real GPS
-traces where possible. They can contain many vertices, and a line is only returned once the
-pipeline has stored a path for the stop — lines are never computed at request time. `path_source`
-tells you how the stored path was derived. Coordinates are ordered source→target (the direction
-in `line_type`).
+Lines are the paths the nightly merge stores, routed over the couriers' recorded tracks: on foot
+for `parking_to_entrance`, driving for `waypoint_to_parking`. They can contain many vertices and are
+never computed at request time. When no path could be routed for a pair, no line is returned.
+Coordinates are ordered source→target (the direction in `line_type`).
 
 | Property | Type | Description |
 | --- | --- | --- |
 | `object_type` | string | `"line"` |
-| `line_type` | string | `parking_to_entrance` (the dashed walking path) · `waypoint_to_parking` (the approach from the waypoint to the parking) |
-| `path_source` | string | `"legs"` — routed over real GPS traces · `"straight"` — the pipeline could not route this pair yet, so the stored path is the direct source→target segment |
+| `line_type` | string | `parking_to_entrance` (the dashed walking path) · `waypoint_to_parking` (the driven approach from the waypoint to the parking) |
+| `path_source` | string | `"legs"`: routed over the recorded tracks. `"straight"`: legacy, a direct source→target segment stored by older runs. A pair the merge could not route is stored as `"none"` and returns no line. |
 | `color` | string | Line colour → `line-color` |
 | `line_width` | number | Line width → `line-width` |
 | `line_style` | string | `"dashed"` for the walking path; combine with `line_dasharray` (e.g. `[2,2]`) |
 | `line_opacity` | number | Opacity of the walking path (e.g. `0.6`) → `line-opacity` |
-| `line_fade` / `fade_start` | string / number | Only with `waypoint_style: "faded"`: `waypoint_to_parking` fades toward the waypoint — `line_fade: "to_start"`, transparent at the start of the line, full opacity from `fade_start` (e.g. `0.3`) onward — render with a `line-gradient` |
+| `line_fade` / `fade_start` | string / number | Only with `waypoint_style: "faded"`: `waypoint_to_parking` fades toward the waypoint: `line_fade: "to_start"`, transparent at the start of the line, full opacity from `fade_start` (e.g. `0.3`) onward. Render with a `line-gradient` |
 
 Paths are raw GPS-routed vertices. Render them with `line-join: "round"` and `line-cap: "round"` for smooth corners; the PNG from `raster=true` already rounds them.
 
-### Polygon — building footprint
+### Polygon: building footprint
 
 | Property | Type | Description |
 | --- | --- | --- |
@@ -149,7 +190,7 @@ Paths are raw GPS-routed vertices. Render them with `line-join: "round"` and `li
 
 <Info>
 The entrance and parking can come from **different** identifiers. Pass each to its own parameter
-(`identifier_entrance` / `identifier_parking`) and they are joined into one stop — the dashed
+(`identifier_entrance` / `identifier_parking`) and they are joined into one stop: the dashed
 walking path connects them and, when available, the entrance's building is highlighted.
 </Info>
 
@@ -158,11 +199,14 @@ walking path connects them and, when available, the entrance's building is highl
 | Status | Meaning |
 | --- | --- |
 | `200` | Success. `features` is empty unless `geojson=true`; with `geojson=true`, an empty `features` array means the stop has no data yet. |
-| `400` | Neither `identifier_entrance` nor `identifier_parking` was provided. |
-| `403` | Missing or invalid `x-api-key`. |
+| `400` | Neither `identifier_entrance` nor `identifier_parking` was provided, or one is longer than 256 characters. |
+| `403` | Missing or invalid `x-api-key`, or the key is not enabled for this API ([API keys](/api_keys)). |
+| `429` | Too many requests for your API key. Slow down and retry with a growing delay. |
+| `500` | Internal error. Retry later; if it persists, write to [info@truemetrics.io](mailto:info@truemetrics.io). |
 
 ## Caching & limits
 
-* Successful, non-empty responses are cacheable (`Cache-Control: public, max-age=3600`).
+* Answers with data are cached for an hour, on our side and by `Cache-Control: public, max-age=3600`.
+  Answers without data are not cached, so a stop shows up as soon as the merge has it.
 * CORS is open (`Access-Control-Allow-Origin: *`) so the endpoint can be called from the browser.
-* Rate limit: **100 requests/second**.
+* Limits apply per API key; a `429` means slow down.

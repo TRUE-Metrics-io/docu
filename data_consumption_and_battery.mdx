@@ -1,6 +1,6 @@
 ---
 title: 'Data and Battery'
-description: 'Details to Data and Battery consumption of truemetrics SDK.'
+description: 'Battery use and data traffic of the truemetrics SDK, and the upload modes.'
 ---
 
 # Battery consumption
@@ -16,20 +16,41 @@ In this case, the SDK (Truemetrics) will not significantly increase battery cons
 In the second scenario, your app currently doesn't use the location provider and communicates minimally with the backend, sending almost no data. All physical sensors are disabled. However, adding TrueMetrics will increase battery consumption. As a rough estimate, battery usage may rise to about 7%–15% per hour, depending on factors such as the Android version, manufacturer, and phone model. This typically results in a battery life of 7–11 hours.
 
 # Data consumption
-trueMetrics collects sensor data from mobile phones and sends it to its backend system to analyze stops, detect entrances, and identify parking locations. This process generates additional data traffic. It can be challenging to estimate the total amount of data transferred each month, as many factors influence the volume. However, most of our customers upload between 400MB and 2GB per month, while downloads typically stay below 50MB.
 
-## Data Transmission Modes
-The amount of data sent can vary significantly based on the selected upload mode. We currently offer three modes: Upload-Always, WiFi-Only, and Metadata-Triggered. You cannot change the mode yourself; please contact us, and we can adjust it on our backend.
+truemetrics collects sensor data on the phone and uploads it to analyze stops and to detect
+entrances and parking places. This adds data traffic. The amount depends on many factors; most of
+our customers upload between 400 MB and 2 GB per month, while downloads typically stay below 50 MB.
 
-### Upload-Always Mode
-This is the default mode, allowing the SDK to upload data using either WiFi or mobile connections.
+## Upload modes
 
-###  WiFi-Only Mode
-In this mode, data is stored locally on the mobile device and only uploaded when a WiFi connection is available. This is ideal if your drivers regularly access WiFi networks.
+truemetrics sets the upload mode per account, in the configuration the SDK fetches. It cannot be
+changed in the app: to change it, contact [info@truemetrics.io](mailto:info@truemetrics.io).
+The mode a test device was served is shown in `upload_mode` by
+[Verify your integration](/verify_integration).
 
-### Metadata-Triggered Mode
-This mode was developed to reduce unnecessary sensor data transmission. For example, periods like a courier's lunch break or time spent at a depot often don’t need to be recorded and transmitted, as they do not provide valuable information and unnecessarily increase data consumption.
+| Mode (`upload_mode`) | What the SDK uploads |
+| --- | --- |
+| `upload_always` | All recorded data, over Wi-Fi or mobile data. |
+| `metadata_triggered` | Only the sensor data around [metadata](/metadata) events, see below. |
+| `upload_wifi_only` | Meant for uploads over Wi-Fi only. The SDK also uses it when the configuration names no mode. SDK 1.6.3 does not check the connection type yet and uploads over any connection, as with `upload_always`. |
 
-In Metadata-triggered Mode, sensor data is buffered on the device and only sent when metadata is recorded around the same time.
+A separate setting, `mode_stats`, reduces the motion sensors' data. With `stats_only` the SDK
+uploads summaries of the accelerometer, gyroscope and magnetometer instead of their raw readings;
+location and the other sensors are uploaded as usual. With `on` it uploads the summaries in
+addition to the raw readings; `off` is the default.
 
-For instance, if a driver spends time in a depot from 8:00 AM to 10:00 AM and then completes the first delivery at 10:30 AM (triggering metadata), only sensor data from around 10:20 AM to 10:40 AM would be sent.
+### Metadata-triggered mode
+
+This mode leaves out data that carries no deliveries, such as time at the depot or a lunch break.
+The SDK keeps the sensor data on the phone and uploads only the data within a window before and
+after each metadata event. truemetrics sets the window per account (`length_buffer_minutes`); when
+the configuration sets none, the SDK uses 60 minutes on each side.
+
+<Frame>
+  <img src="/images/motion/metadata_upload.svg" alt="A morning on a timeline from 7:00 to 12:00: the phone buffers sensor data at the depot from 8:00 to 10:00, a delivery at 10:30 logs a metadata event, and only the data from 9:30 to 11:30 is uploaded." />
+</Frame>
+
+For example, a driver is at the depot from 8:00 to 10:00 and logs the first delivery at 10:30.
+With the 60-minute window, the data from 9:30 to 11:30 is uploaded and the data from before 9:30 is
+not. On a route with a delivery every few minutes the windows overlap, so the whole delivery period
+is uploaded and only longer gaps are left out.
