@@ -102,7 +102,7 @@ Links (the same as for Google Maps, or the truemetrics scheme):
 | `ID_sec` | Optional, left out by default: a second identifier of the stop, if the app has one |
 | `line1`, `line2` | Optional: the card's two lines, e.g. street and number, and "Planned Arrival 14:22" or postcode and city; `line2` shows only with `line1`, without `line1` the card shows the `(label)` from `q` |
 
-Only the stop at `next_stop` is read. A `route` that cannot be read, a `next_stop` outside the list or a stop with none of these fields counts as no `route`.
+The stop at `next_stop` is the one the courier is navigated to; send the whole tour all the same, the other stops are used as well. A `route` that cannot be read, a `next_stop` outside the list or a stop with none of these fields counts as no `route`.
 
 Native Android example:
 

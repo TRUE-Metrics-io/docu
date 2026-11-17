@@ -161,7 +161,8 @@ The whole tour (up to 200 stops) and which of its stops comes next:
 | `ID_sec` | Optional, usually left out. Only if your system uses a second identifier for the stop (for example a separate parking or route point next to the address), and only if truemetrics asked for it. |
 | `line1`, `line2` | Optional: the card's two lines, e.g. street and number, and a second line of your choice such as the planned arrival or postcode and city. Each on one line, cut with "…" when longer. `line2` shows only with `line1`; without `line1` the card shows the `(label)` from `q`, if any. |
 
-Only the stop at `next_stop` is read; other fields are ignored. A `route` that cannot be read, a
+The stop at `next_stop` is the one the courier is navigated to; send the whole tour all the same,
+the other stops are used as well. Other fields are ignored. A `route` that cannot be read, a
 `next_stop` outside the list or a stop with none of these fields counts as no `route`: the app
 drives to `q` without a last meter.
 
