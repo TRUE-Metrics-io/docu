@@ -1,0 +1,126 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 540" width="900" height="540" font-family="Inter, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif">
+  <title>The truemetrics module inside your app: routing off (2A) and routing on (2B)</title>
+  <defs>
+    <clipPath id="screen"><rect x="10" y="12" width="210" height="416" rx="18"/></clipPath>
+    <clipPath id="map"><rect x="10" y="62" width="210" height="296"/></clipPath>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="1.2" stdDeviation="1.2" flood-color="#000" flood-opacity="0.25"/>
+    </filter>
+    <!-- The map of the stop, shared by both phones -->
+    <g id="stopmap">
+      <rect x="10" y="62" width="210" height="296" fill="#F3F0E8"/>
+      <rect x="16" y="68" width="30" height="150" rx="2" fill="#E2DDD2"/>
+      <rect x="176" y="150" width="40" height="70" rx="2" fill="#E2DDD2"/>
+      <rect x="80" y="250" width="134" height="100" rx="2" fill="#E2DDD2"/>
+      <path d="M60,370 V230 H230" stroke="#CFC7B8" stroke-width="18" fill="none"/>
+      <path d="M60,370 V230 H230" stroke="#FFFFFF" stroke-width="14" fill="none"/>
+      <path d="M150,230 V136" stroke="#CFC7B8" stroke-width="10"/>
+      <path d="M150,230 V136" stroke="#FFFFFF" stroke-width="7"/>
+      <rect x="62" y="104" width="60" height="70" rx="2" fill="#1E9ED5" fill-opacity="0.18" stroke="#1E9ED5" stroke-width="1.5"/>
+      <path d="M160,124 L136,132 L122,138" fill="none" stroke="#1E9ED5" stroke-width="3" stroke-dasharray="5 4" stroke-linecap="round"/>
+      <g transform="translate(122,139)" filter="url(#shadow)"><circle r="9" fill="#E63946"/><text y="4" text-anchor="middle" font-size="10.5" font-weight="700" fill="#FFFFFF">E</text></g>
+      <g transform="translate(168,120)" filter="url(#shadow)"><rect x="-9" y="-9" width="18" height="18" rx="4" fill="#1E9ED5"/><text y="4.5" text-anchor="middle" font-size="12" font-weight="700" fill="#FFFFFF">P</text></g>
+    </g>
+    <!-- Your app around the module -->
+    <g id="hostbar">
+      <rect x="10" y="12" width="210" height="50" fill="#FFFFFF"/>
+      <text x="24" y="34" font-size="11" fill="#757575">Stop 14 of 52</text>
+      <text x="24" y="51" font-size="13" font-weight="600" fill="#303334">Gymnasievej 39</text>
+      <rect x="10" y="358" width="210" height="70" fill="#FFFFFF"/>
+      <rect x="24" y="372" width="182" height="40" rx="8" fill="#303334"/>
+      <text x="115" y="397" text-anchor="middle" font-size="13" font-weight="600" fill="#FFFFFF">Your own buttons</text>
+    </g>
+  </defs>
+
+  <rect width="900" height="540" rx="14" fill="#FAFAF8"/>
+
+  <!-- ===== 2A: routing = false ===== -->
+  <g transform="translate(30,20)">
+    <text x="0" y="22" font-size="18" font-weight="700" fill="#00737F">2A · routing = false</text>
+    <text x="0" y="44" font-size="13" fill="#616161">Last meter only. Your navigation stays as it is.</text>
+  </g>
+  <g transform="translate(30,70)">
+    <rect width="230" height="440" rx="26" fill="#262626"/>
+    <g clip-path="url(#screen)">
+      <use href="#stopmap"/>
+      <!-- Courier position, framed together with the stop -->
+      <g clip-path="url(#map)">
+        <g>
+          <animateMotion path="M44,330 L56,280 L64,250 L96,232 L140,232" dur="9s" repeatCount="indefinite"/>
+          <circle r="10" fill="#1E88E5" opacity="0.25">
+            <animate attributeName="r" values="7;15;7" dur="1.8s" repeatCount="indefinite"/>
+          </circle>
+          <circle r="6" fill="#1E88E5" stroke="#FFFFFF" stroke-width="2.5"/>
+        </g>
+      </g>
+      <use href="#hostbar"/>
+      <rect x="11" y="63" width="208" height="294" fill="none" stroke="#0097a7" stroke-width="2" stroke-dasharray="6 4"/>
+    </g>
+  </g>
+  <g transform="translate(274,140)" font-size="12" fill="#424242">
+    <text x="0" y="0" font-weight="700" fill="#303334">What the courier sees</text>
+    <text x="0" y="22">• Parking, entrance, walk path</text>
+    <text x="0" y="40">• Building of the entrance</text>
+    <text x="0" y="58">• Own position as a dot,</text>
+    <text x="10" y="74">in one frame with the stop</text>
+    <text x="0" y="92">• No route, no guidance</text>
+    <text x="0" y="110">• Ends with Back</text>
+  </g>
+
+  <!-- ===== 2B: routing = true ===== -->
+  <g transform="translate(460,20)">
+    <text x="0" y="22" font-size="18" font-weight="700" fill="#00737F">2B · routing = true</text>
+    <text x="0" y="44" font-size="13" fill="#616161">Route, guidance and the last meter in your app.</text>
+  </g>
+  <g transform="translate(460,70)">
+    <rect width="230" height="440" rx="26" fill="#262626"/>
+    <g clip-path="url(#screen)">
+      <use href="#stopmap"/>
+      <g clip-path="url(#map)">
+        <path d="M60,370 V230 H150 V136 L160,128" fill="none" stroke="#0B4F7C" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" opacity="0.9"/>
+        <circle cx="150" cy="230" r="5" fill="#FFFFFF" stroke="#1E9ED5" stroke-width="3"/>
+        <g>
+          <animateMotion path="M60,380 V230 H150 V136 L160,128" keyPoints="0;1;1" keyTimes="0;0.8;1" calcMode="linear" rotate="auto" dur="8s" repeatCount="indefinite"/>
+          <path d="M-9,-8 L11,0 L-9,8 L-4,0 Z" fill="#F0A04B" stroke="#FFFFFF" stroke-width="2" stroke-linejoin="round" filter="url(#shadow)"/>
+        </g>
+        <!-- Turn banner -->
+        <rect x="18" y="70" width="194" height="40" rx="8" fill="#0B4F7C" filter="url(#shadow)">
+          <animate attributeName="fill" values="#0B4F7C;#0B4F7C;#2E7D32;#2E7D32" keyTimes="0;0.62;0.63;1" dur="8s" repeatCount="indefinite"/>
+        </rect>
+        <g font-weight="600" fill="#FFFFFF">
+          <text x="30" y="96" font-size="14">
+            <tspan>↱ 120 m  Gymnasievej</tspan>
+            <animate attributeName="opacity" values="1;1;0;0" keyTimes="0;0.62;0.63;1" dur="8s" repeatCount="indefinite"/>
+          </text>
+          <text x="30" y="96" font-size="14" opacity="0">Arriving · park at P
+            <animate attributeName="opacity" values="0;0;1;1" keyTimes="0;0.62;0.63;1" dur="8s" repeatCount="indefinite"/>
+          </text>
+        </g>
+      </g>
+      <use href="#hostbar"/>
+      <rect x="11" y="63" width="208" height="294" fill="none" stroke="#0097a7" stroke-width="2" stroke-dasharray="6 4"/>
+    </g>
+  </g>
+
+  <g transform="translate(708,140)" font-size="12.5" fill="#424242">
+    <text x="0" y="0" font-weight="700" fill="#303334">What the courier sees</text>
+    <text x="0" y="22">• Route to the waypoint,</text>
+    <text x="10" y="38">then into the parking</text>
+    <text x="0" y="56">• Turn-by-turn, rerouting</text>
+    <text x="0" y="74">• Parking, entrance, walk</text>
+    <text x="10" y="90">path, building</text>
+    <text x="0" y="108">• Arrival at P or E</text>
+    <text x="0" y="126">• Ends on arrival or Back</text>
+  </g>
+
+  <!-- Caption under both -->
+  <g transform="translate(284,350)" font-size="12.5" fill="#424242">
+    <rect x="-6" y="-18" width="110" height="160" rx="10" fill="#FFFFFF" stroke="#E0E0E0"/>
+    <rect x="6" y="-4" width="22" height="12" fill="none" stroke="#0097a7" stroke-width="2" stroke-dasharray="4 3"/>
+    <text x="6" y="28" font-size="11.5">truemetrics</text>
+    <text x="6" y="43" font-size="11.5">module</text>
+    <rect x="6" y="62" width="22" height="12" rx="2" fill="#303334"/>
+    <text x="6" y="94" font-size="11.5">your own</text>
+    <text x="6" y="109" font-size="11.5">screen around it</text>
+  </g>
+</svg>

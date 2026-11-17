@@ -1,0 +1,125 @@
+---
+title: 'Integrate the standalone navigation app with an AI Agent'
+sidebarTitle: 'Standalone app with agent'
+description: 'Copy-paste prompt that lets a coding agent hand stops from your courier app to the truemetrics standalone navigation app (2C)'
+---
+
+## How to use this prompt
+
+Paste the prompt below into your coding agent (Claude Code, Cursor, Copilot or similar) with your courier app repository open. The agent finds where your app starts Google Maps or Waze, proposes the handover to the truemetrics standalone navigation app and the way back, asks you to confirm every integration point, and then implements it.
+
+Your courier app needs no API key for this: the truemetrics standalone navigation app has its own, set up by truemetrics. Request the app for your devices from [jan@truemetrics.io](mailto:jan@truemetrics.io). The truemetrics SDK should already record in the app (see [Integrate with an AI agent](/with_agent)): the navigation app shows what truemetrics learned from those recordings.
+
+## The prompt
+
+Copy everything inside the block.
+
+````markdown
+# Task: Hand stops over to the truemetrics standalone navigation app
+
+You are changing this courier/driver app so that it hands a delivery stop to the truemetrics standalone navigation app (Android package `io.truemetrics.navigation`) instead of Google Maps or Waze. The truemetrics app takes the same `google.navigation:` link Google Maps takes, drives the courier to the waypoint on the street and into the parking, shows the walk path to the entrance that truemetrics learned from the couriers' deliveries, and switches back to this app on arrival. The app only needs to: add a few optional fields to the link it already sends, target the truemetrics app, fall back to Google Maps when it is not installed, and make the way back land well.
+
+Work in this order:
+1. Analyze the codebase: language and framework, every place where navigation to a stop is started (`google.navigation:`, `geo:`, `https://maps.google.com`, `https://www.google.com/maps/dir`, `waze://`, `https://waze.com/ul` links, map SDK calls), the stop/tour data models (coordinates, street, postcode, city, address IDs, tour order), the truemetrics SDK metadata code (which value is sent as `address_id`), and the launcher activity with its `launchMode` and deep links.
+2. For EACH integration point below, propose the exact file, function and line, explain why, and ASK ME TO CONFIRM before writing code. Ask all questions in one batch where possible.
+3. Implement only what I confirmed. Keep changes minimal and isolated (ideally one helper, e.g. `TruemetricsHandover`, called from the existing navigation call sites).
+4. Use the handover reference at the end of this prompt.
+
+## 0. Platform
+
+- Android only. In cross-platform apps (Flutter, React Native, Expo), keep the current behavior on iOS and guard the new code with a platform check.
+- Native Android (Kotlin/Java): build an `Intent` with extras.
+- Flutter / React Native / web views without native code: open a URL; every field can be a query parameter of the link (URL-encoded). Use the `truemetrics.navigation://navigate?q=<lat>,<lng>&...` scheme, which opens only the truemetrics app, and fall back to the current Google Maps link if it cannot be opened.
+
+Confirm with me: the detected framework and all call sites found.
+
+## 1. The handover
+
+At each confirmed call site, keep the current link and add:
+- The target: `setPackage("io.truemetrics.navigation")` (native), so no chooser and no Google Maps opens.
+- `route`: the tour as JSON (see the reference) with the stop to drive to as `next_stop`. Per stop `ID` = the ENTRANCE address identifier and `ID_sec` = the PARKING address identifier, exactly as sent to truemetrics as `address_id` in the SDK metadata (if the app has one ID per address, send it in both), plus `line1` (street and number) and `line2` (postcode and city).
+- The way back: `returnApp` (this app's package name) or `returnUri` (see section 2).
+- `q` must be `<lat>,<lng>` in WGS84 degrees. If the current call sends an address string instead of coordinates, tell me: the truemetrics app does not geocode. Propose where the coordinates come from.
+
+IMPORTANT, the IDs: look them up in the truemetrics SDK metadata code; do not guess. Without them the courier is navigated to `q` without the last meter.
+
+Fallback: start the intent in a try/catch; on `ActivityNotFoundException` start it again without the package (Google Maps as before, it ignores the extra fields). Do not add a `<queries>` element only for this.
+
+Do not send `simulate`, `simulationStart` (demo only) or `lastMeterOnly` unless I ask for it (`lastMeterOnly = true`: no drive, only the stop's last meter and the courier's position).
+
+Confirm with me: the field mapping from this app's stop and tour models, and the call sites to change.
+
+## 2. The way back
+
+The truemetrics app switches back on arrival (after a 10 s countdown on its Back button) and when the courier taps Back or uses the system Back.
+- `returnApp` = this app's package: brings the app to the front as a tap on its icon does. Check that the launcher activity's `launchMode` (`singleTask` or `singleTop`) and task setup bring the courier back to the screen they left, not a fresh start. Propose a change if not, and ask me.
+- `returnUri` = a deep link of this app (browsable `VIEW` intent filter), e.g. to the stop's delivery screen. Use it if the app has, or should get, such a link. `file:`, `content:` and `intent:` links are ignored.
+- Neither: no Back button, no switch on arrival; the courier comes back on their own, as from Google Maps.
+
+Confirm with me: `returnApp` or `returnUri`, and where the courier should land.
+
+## 3. Optional: offer the choice
+
+If the app has settings for the navigation app (e.g. Google Maps vs Waze), propose adding "truemetrics" there instead of switching all couriers at once. Ask me.
+
+## Handover reference
+
+Links (the same as for Google Maps, or the truemetrics scheme):
+
+    google.navigation:q=<lat>,<lng>&mode=d
+    truemetrics.navigation://navigate?q=<lat>,<lng>
+
+`q` is `<lat>,<lng>`, optionally followed by `(label)`. Every optional field below can be an intent extra or a URL-encoded query parameter; an extra wins over a parameter of the same name. Extras are strings, except `lastMeterOnly` and `simulate` (boolean, or the string "true").
+
+| Field | Meaning |
+| --- | --- |
+| `route` | JSON: the tour and the stop to drive to, see below |
+| `returnUri` | Browsable deep link opened to switch back |
+| `returnApp` | Package to switch back to, if there is no `returnUri` |
+| `lastMeterOnly` (boolean) | No drive: only the stop's last meter and the courier's position |
+| `simulate` (boolean), `simulationStart` ("lat,lng") | Demo only: a simulated drive |
+
+`route`, up to 200 stops:
+
+    {
+      "stops": [
+        { "ID": "<entrance id>", "ID_sec": "<parking id>", "line1": "Gymnasievej 39", "line2": "2625 Vallensbæk" },
+        { "ID": "<entrance id>", "ID_sec": "<parking id>", "line1": "Østerbyvejen 33", "line2": "9940 Læsø" }
+      ],
+      "next_stop": 1
+    }
+
+| Field | Meaning |
+| --- | --- |
+| `next_stop` | Index in `stops` of the stop to drive to, counted from 0 |
+| `ID` | The stop's entrance identifier (the `address_id` of the metadata) |
+| `ID_sec` | The stop's parking identifier |
+| `line1`, `line2` | Optional: the card's two lines, street and number, postcode and city |
+
+Only the stop at `next_stop` is read. A `route` that cannot be read, a `next_stop` outside the list or a stop with none of these fields counts as no `route`.
+
+Native Android example:
+
+    val intent = Intent(Intent.ACTION_VIEW, Uri.parse("google.navigation:q=${stop.lat},${stop.lon}&mode=d"))
+        .setPackage("io.truemetrics.navigation")
+        .putExtra("route", routeJson(tour, nextStop = index))
+        .putExtra("returnApp", packageName)
+    try {
+        startActivity(intent)
+    } catch (e: ActivityNotFoundException) {
+        startActivity(intent.setPackage(null))
+    }
+
+Behavior to know:
+- One handover runs at a time: a new one replaces the one before, also for the same stop.
+- Route overview first; its Navigate button presses itself after 10 s.
+- Arrival: within 30 m of the parking or entrance and slower than 15 km/h for 20 s.
+- The drive goes on with the phone locked or this app in front (foreground service with a notification).
+
+## Done when
+
+- Every confirmed call site hands over to `io.truemetrics.navigation`, with `route` (the IDs from the SDK metadata, `line1`/`line2`) and the way back, and falls back to Google Maps when the app is not installed.
+- iOS (in cross-platform apps) unchanged.
+- The way back lands on the screen I confirmed.
+- Give me a short summary of every file changed and a test plan: on a real Android device with the truemetrics app installed and without it, a stop with known last-meter data and one without, Back during the drive, arrival with the automatic switch back, and the next stop after it. For a quick check from a computer: `adb shell am start -a android.intent.action.VIEW -d "google.navigation:q=<lat>,<lng>&mode=d" -n io.truemetrics.navigation/.ui.navigation.HandoverActivity --es returnApp <this app's package>`.
+````

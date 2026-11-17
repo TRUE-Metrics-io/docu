@@ -1,0 +1,158 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 500" width="1000" height="500" font-family="Inter, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif">
+  <title>App switch: your courier app hands the stop to the truemetrics navigation app and gets the courier back on arrival</title>
+  <defs>
+    <clipPath id="scr"><rect x="8" y="10" width="154" height="310" rx="14"/></clipPath>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 Z" fill="#757575"/>
+    </marker>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="1" stdDeviation="1.2" flood-color="#000" flood-opacity="0.25"/>
+    </filter>
+    <g id="phone"><rect width="170" height="330" rx="20" fill="#262626"/></g>
+    <g id="map">
+      <rect x="8" y="10" width="154" height="310" fill="#F3F0E8"/>
+      <rect x="14" y="60" width="30" height="120" rx="2" fill="#E2DDD2"/>
+      <rect x="96" y="196" width="62" height="70" rx="2" fill="#E2DDD2"/>
+      <path d="M44,330 V190 H170" stroke="#CFC7B8" stroke-width="14" fill="none"/>
+      <path d="M44,330 V190 H170" stroke="#FFFFFF" stroke-width="10" fill="none"/>
+      <path d="M112,190 V112" stroke="#FFFFFF" stroke-width="6"/>
+      <rect x="54" y="88" width="44" height="54" rx="2" fill="#1E9ED5" fill-opacity="0.18" stroke="#1E9ED5" stroke-width="1.5"/>
+      <path d="M120,104 L100,112" stroke="#1E9ED5" stroke-width="2.5" stroke-dasharray="4 3" stroke-linecap="round"/>
+      <g transform="translate(98,113)"><circle r="7.5" fill="#E63946"/><text y="3.5" text-anchor="middle" font-size="9" font-weight="700" fill="#FFFFFF">E</text></g>
+      <g transform="translate(126,101)"><rect x="-7.5" y="-7.5" width="15" height="15" rx="3" fill="#1E9ED5"/><text y="4" text-anchor="middle" font-size="10" font-weight="700" fill="#FFFFFF">P</text></g>
+    </g>
+  </defs>
+
+  <rect width="1000" height="500" rx="14" fill="#FAFAF8"/>
+
+  <!-- Active-step highlight -->
+  <rect y="78" width="190" height="350" rx="28" fill="none" stroke="#0097a7" stroke-width="4" opacity="0.9">
+    <animate attributeName="x" values="20;270;520;770" keyTimes="0;0.22;0.6;0.84" calcMode="discrete" dur="14s" repeatCount="indefinite"/>
+  </rect>
+
+  <!-- Step titles -->
+  <g font-size="13.5" font-weight="700" fill="#303334">
+    <text x="30" y="40">1 · Courier taps Navigate</text>
+    <text x="280" y="40">2 · Drive, last meter on the map</text>
+    <text x="530" y="40">3 · Arrived: back in 10 s</text>
+    <text x="780" y="40">4 · Next stop, same app as before</text>
+  </g>
+  <g font-size="11.5" fill="#757575">
+    <text x="30" y="60">your courier app, as today</text>
+    <text x="280" y="60">truemetrics navigation app</text>
+    <text x="530" y="60">truemetrics navigation app</text>
+    <text x="780" y="60">your courier app</text>
+  </g>
+
+  <!-- 1: your courier app -->
+  <g transform="translate(30,88)">
+    <use href="#phone"/>
+    <g clip-path="url(#scr)">
+      <rect x="8" y="10" width="154" height="310" fill="#FFFFFF"/>
+      <rect x="8" y="10" width="154" height="36" fill="#303334"/>
+      <text x="20" y="33" font-size="12.5" font-weight="600" fill="#FFFFFF">Today's stops</text>
+      <g font-size="11">
+        <text x="18" y="70" fill="#9E9E9E">1 · Hovedgaden 4</text>
+        <text x="18" y="85" fill="#2E7D32">✓ delivered</text>
+        <path d="M8,98 H162" stroke="#EEEEEE"/>
+        <rect x="8" y="99" width="154" height="70" fill="#E0F4F6"/>
+        <text x="18" y="118" fill="#303334" font-weight="600">2 · Gymnasievej 39</text>
+        <text x="18" y="133" fill="#757575">2625 Vallensbæk</text>
+        <rect x="18" y="141" width="76" height="22" rx="11" fill="#0097a7"/>
+        <text x="56" y="156" text-anchor="middle" fill="#FFFFFF" font-weight="600">Navigate</text>
+        <circle cx="56" cy="152" r="0" fill="#0097a7" opacity="0">
+          <animate attributeName="r" values="0;0;24;24" keyTimes="0;0.1;0.18;1" dur="14s" repeatCount="indefinite"/>
+          <animate attributeName="opacity" values="0;0;0.45;0;0" keyTimes="0;0.1;0.11;0.18;1" dur="14s" repeatCount="indefinite"/>
+        </circle>
+        <path d="M8,170 H162" stroke="#EEEEEE"/>
+        <text x="18" y="190" fill="#303334">3 · Skolevej 12</text>
+        <text x="18" y="205" fill="#757575">2625 Vallensbæk</text>
+        <path d="M8,218 H162" stroke="#EEEEEE"/>
+        <text x="18" y="238" fill="#303334">4 · Engvej 7</text>
+      </g>
+    </g>
+  </g>
+
+  <!-- 2: drive -->
+  <g transform="translate(280,88)">
+    <use href="#phone"/>
+    <g clip-path="url(#scr)">
+      <use href="#map"/>
+      <path d="M44,330 V190 H112 V112 L120,104" fill="none" stroke="#0B4F7C" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+      <g>
+        <animateMotion path="M44,330 V190 H112 V140" keyPoints="0;0;1;1" keyTimes="0;0.22;0.58;1" calcMode="linear" rotate="auto" dur="14s" repeatCount="indefinite"/>
+        <path d="M-8,-7 L10,0 L-8,7 L-3,0 Z" fill="#F0A04B" stroke="#FFFFFF" stroke-width="1.8" stroke-linejoin="round"/>
+      </g>
+      <rect x="14" y="16" width="142" height="32" rx="7" fill="#0B4F7C" filter="url(#shadow)"/>
+      <text x="24" y="37" font-size="12" font-weight="600" fill="#FFFFFF">↱ 200 m  Gymnasievej</text>
+      <rect x="8" y="262" width="154" height="58" fill="#FFFFFF"/>
+      <text x="18" y="281" font-size="11" font-weight="600" fill="#303334">Gymnasievej 39</text>
+      <text x="18" y="297" font-size="10.5" fill="#757575">4 min · 10:42</text>
+      <text x="18" y="312" font-size="10.5" fill="#0097a7" font-weight="600">Back to scanner app</text>
+    </g>
+  </g>
+
+  <!-- 3: arrival -->
+  <g transform="translate(530,88)">
+    <use href="#phone"/>
+    <g clip-path="url(#scr)">
+      <use href="#map"/>
+      <g transform="translate(112,140)">
+        <path d="M-8,-7 L10,0 L-8,7 L-3,0 Z" transform="rotate(-90)" fill="#F0A04B" stroke="#FFFFFF" stroke-width="1.8" stroke-linejoin="round"/>
+      </g>
+      <rect x="14" y="16" width="142" height="32" rx="7" fill="#2E7D32" filter="url(#shadow)"/>
+      <text x="24" y="37" font-size="12" font-weight="600" fill="#FFFFFF">Arrived · Gymnasievej</text>
+      <rect x="8" y="262" width="154" height="58" fill="#FFFFFF"/>
+      <rect x="16" y="276" width="138" height="30" rx="8" fill="#B2DFE4"/>
+      <rect x="16" y="276" width="0" height="30" rx="8" fill="#0097a7">
+        <animate attributeName="width" values="0;0;138;138" keyTimes="0;0.6;0.82;1" dur="14s" repeatCount="indefinite"/>
+      </rect>
+      <text x="85" y="295" text-anchor="middle" font-size="11" font-weight="600" fill="#FFFFFF">Back to scanner app</text>
+    </g>
+  </g>
+
+  <!-- 4: back -->
+  <g transform="translate(780,88)">
+    <use href="#phone"/>
+    <g clip-path="url(#scr)">
+      <rect x="8" y="10" width="154" height="310" fill="#FFFFFF"/>
+      <rect x="8" y="10" width="154" height="36" fill="#303334"/>
+      <text x="20" y="33" font-size="12.5" font-weight="600" fill="#FFFFFF">Today's stops</text>
+      <g font-size="11">
+        <text x="18" y="70" fill="#9E9E9E">1 · Hovedgaden 4</text>
+        <text x="18" y="85" fill="#2E7D32">✓ delivered</text>
+        <path d="M8,98 H162" stroke="#EEEEEE"/>
+        <text x="18" y="118" fill="#9E9E9E">2 · Gymnasievej 39</text>
+        <text x="18" y="133" fill="#2E7D32">✓ delivered</text>
+        <path d="M8,146 H162" stroke="#EEEEEE"/>
+        <rect x="8" y="147" width="154" height="70" fill="#E0F4F6"/>
+        <text x="18" y="166" fill="#303334" font-weight="600">3 · Skolevej 12</text>
+        <text x="18" y="181" fill="#757575">2625 Vallensbæk</text>
+        <rect x="18" y="189" width="76" height="22" rx="11" fill="#0097a7"/>
+        <text x="56" y="204" text-anchor="middle" fill="#FFFFFF" font-weight="600">Navigate</text>
+        <path d="M8,218 H162" stroke="#EEEEEE"/>
+        <text x="18" y="238" fill="#303334">4 · Engvej 7</text>
+      </g>
+    </g>
+  </g>
+
+  <!-- Arrows between the steps -->
+  <path d="M206,253 H274" stroke="#757575" stroke-width="2" marker-end="url(#arrow)"/>
+  <path d="M456,253 H524" stroke="#BDBDBD" stroke-width="2" stroke-dasharray="4 4" marker-end="url(#arrow)"/>
+  <path d="M706,253 H774" stroke="#757575" stroke-width="2" marker-end="url(#arrow)"/>
+  <circle r="6" fill="#F0A04B" opacity="0">
+    <animate attributeName="cx" values="206;206;272;272;706;706;772;772" keyTimes="0;0.16;0.22;0.82;0.82;0.84;0.9;1" dur="14s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0;0;1;0;0;1;0;0" keyTimes="0;0.16;0.2;0.22;0.82;0.84;0.89;1" dur="14s" repeatCount="indefinite"/>
+    <animate attributeName="cy" values="253" dur="14s" repeatCount="indefinite"/>
+  </circle>
+
+  <!-- What travels with the switch -->
+  <g font-size="11.5">
+    <rect x="30" y="440" width="430" height="44" rx="10" fill="#FFFFFF" stroke="#E0E0E0"/>
+    <text x="44" y="458" fill="#616161">Same intent as for Google Maps, plus optional extras:</text>
+    <text x="44" y="475" fill="#00636E" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="11">google.navigation:q=55.6544,12.3618  + route, returnApp</text>
+    <rect x="540" y="440" width="430" height="44" rx="10" fill="#FFFFFF" stroke="#E0E0E0"/>
+    <text x="554" y="458" fill="#616161">The way back: your app's package or your own deep link</text>
+    <text x="554" y="475" fill="#00636E" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="11">returnApp=com.example.scanner  ·  returnUri=scanner://stop/2</text>
+  </g>
+</svg>

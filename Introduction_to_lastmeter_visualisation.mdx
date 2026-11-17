@@ -1,50 +1,104 @@
 ---
-title: 'Introduction'
-description: 'A ready-to-render map view of the last meters of a delivery.'
+title: 'Option 1 · The last meter in your own map'
+sidebarTitle: 'Introduction'
+description: 'Parking, entrance, waypoint, walk path and building as data, drawn by your own map: from your backend (1A) or from the truemetrics REST API (1B).'
 ---
 
-The **Last Meter Visualisation** API returns, for one of your deliveries, a ready-to-render
-picture of the *last meters* of the delivery: where the driver **parked**, the **entrance** that
-was used, the **walking path** between them, an optional intermediate **waypoint**, and the
-**building** the entrance belongs to.
-
-You request it for a single delivery stop — by giving the **entrance** and **parking** address
-identifiers (they may be the same id, or two different ids) — and get back:
-
-* a **GeoJSON `FeatureCollection`** you can drop straight onto a [MapLibre](https://maplibre.org/)
-  or [Mapbox](https://www.mapbox.com/) map — the styling hints (colours, line widths, dashes) map
-  1:1 to map layer styles, and
-* optionally a **rendered PNG image** (`raster`), so you can show a thumbnail without running a
-  map renderer yourself — either transparent (to overlay on your own map) or on a street basemap.
-
-<img height="260" noZoom src="/images/lastmeter_basemap.png" />
-
-## When to use it
-
-* Plot the last-meter geometry of a delivery in your own dashboard or driver app.
-* Embed a small map thumbnail of a stop in an email, report or ticket.
-* Give dispatchers a quick visual of *where exactly* a parcel was delivered.
-
-## What you get
+With option 1 you keep your own map and your own design, in the courier app, a dispatcher dashboard
+or anywhere else. truemetrics delivers the last meter of each stop as data:
 
 | Element | Description |
 | --- | --- |
 | **Entrance** | The detected door / delivery point for the address. |
-| **Parking** | Where the driver parked the vehicle. |
-| **Waypoint** | An optional point along the walking route. |
-| **Walking path** | The detected walking route from parking to entrance (dashed), returned once the merge pipeline has computed it. |
+| **Parking** | Where couriers park the vehicle. |
+| **Waypoint** | Where the approach leaves the street: the point to route to. |
+| **Walk path** | The detected walking route from parking to entrance. |
 | **Building** | The building footprint the entrance belongs to (when available). |
 
-All coordinates are returned in **EPSG:4326** (WGS84 longitude/latitude).
+All coordinates are in **EPSG:4326** (WGS84 longitude/latitude). For how to draw them so couriers
+read them at a glance, see the [best practices](/lastmeter_routing_overview#best-practices-for-the-last-meter).
 
-## Authentication
+There are two ways to get this data into your map.
+
+<Frame caption="1A: through your own backend. 1B: straight from the REST API.">
+  <img src="/images/lastmeter/option1_flows.svg" alt="Diagram: truemetrics sends the last meter either as a daily export to your backend, which joins it to your tours, or per stop through the REST API; your own map draws parking, entrance and walk path." />
+</Frame>
+
+## 1A · Data from your own backend
+
+truemetrics exports parking places, entrances, waypoints and walk paths to your backend. Your
+backend feeds them to the courier app, or wherever the visualisation happens, together with the
+tour. The courier app never talks to truemetrics for the last meter.
+
+<Steps>
+  <Step title="truemetrics exports">
+    Every day, the current last meter of all your addresses goes to your cloud storage (AWS S3,
+    Google Cloud Storage) or SFTP server, keyed by the address identifier you send as metadata. See
+    [Architecture of the export](/Architecture_of_Export) and the
+    [location data format](/Introduction_to_data_export#location-data).
+  </Step>
+  <Step title="Your backend imports">
+    Load the export into your own database. Join it to your addresses by the address identifier.
+  </Step>
+  <Step title="Your backend hands it out with the tour">
+    When a tour is sent to the courier's device, add each stop's parking, entrance, waypoint and walk
+    path, as you already add the address.
+  </Step>
+  <Step title="Your app draws it">
+    Your map shows the stop with the [best practices](/lastmeter_routing_overview#best-practices-for-the-last-meter).
+    Your navigation can route to the waypoint instead of the address.
+  </Step>
+</Steps>
+
+**Choose 1A when** you want the data in your own systems: for planning, for other tools, for
+devices with poor coverage (the tour carries everything), and with no request to truemetrics at
+delivery time.
+
+## 1B · Data from the truemetrics REST API
+
+Your app (or your backend) asks the [Last Meter Visualisation API](/Lastmeter_API_Reference) for one
+stop and gets back exactly that data, ready to draw:
+
+* a **GeoJSON `FeatureCollection`** you can drop straight onto a [MapLibre](https://maplibre.org/)
+  or [Mapbox](https://www.mapbox.com/) map. The styling hints (colours, line widths, dashes) map
+  1:1 to map layer styles, and
+* optionally a **rendered PNG image** (`raster`), so you can show a thumbnail without running a
+  map renderer yourself: either transparent (to overlay on your own map) or on a street basemap.
+
+<img height="260" noZoom src="/images/lastmeter_basemap.png" />
+
+**Choose 1B when** you want the newest data per stop with the least work on your side, or a picture
+of the stop in an email, report, ticket or dashboard.
+
+Typical uses:
+
+* Plot the last-meter geometry of a stop in your own driver app or dashboard.
+* Embed a small map thumbnail of a stop in an email, report or ticket.
+* Give dispatchers a quick visual of *where exactly* a parcel was delivered.
+
+### Authentication
 
 Every request is authenticated with your **`x-api-key`**. The key identifies your account, so you
-only ever receive your own data — there is no account or customer parameter in the request. Your
+only ever receive your own data: there is no account or customer parameter in the request. Your
 key and the base URL are provided by your truemetrics contact.
 
 <Info>
 The identifiers you pass are the same address identifiers you send to truemetrics as metadata
-(your `id_address` / merge id). The entrance and parking may use **different** identifiers — pass
+(your `id_address` / merge id). The entrance and parking may use **different** identifiers: pass
 each to its own parameter (`identifier_entrance` / `identifier_parking`).
 </Info>
+
+Next: the [API reference](/Lastmeter_API_Reference) and [examples](/Lastmeter_Examples).
+
+## 1A or 1B
+
+| | 1A · own backend | 1B · REST API |
+| --- | --- | --- |
+| Data in your own systems | Yes, a full copy | No, fetched per stop |
+| Freshness | Daily | Current at request time |
+| At delivery time | No request to truemetrics | One request per stop (cacheable for an hour) |
+| Rendering | Your own styling | Styling hints included, or a ready PNG |
+| Work on your side | Import, storage, delivery to devices, map | Map, one HTTP call |
+
+Both leave the routing to your own navigation. To get routing to the parking and the walk to the
+door without building the map yourself, see the [truemetrics last meter module](/navigation_module).
