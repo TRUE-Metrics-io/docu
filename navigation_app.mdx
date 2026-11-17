@@ -52,13 +52,43 @@ fun routeJson(tour: List<Stop>, nextStop: Int): String = JSONObject()
     .toString()
 ```
 
-<Tip>
-No native code? Every field can also be a query parameter of the link (URL-encoded), so Flutter,
-React Native or a web view can open a plain URL:
-`truemetrics.navigation://navigate?q=55.654436,12.361784&returnApp=com.example.scanner&route=%7B...%7D`.
-The `truemetrics.navigation://` scheme opens only the truemetrics app; `google.navigation:` may
-open Google Maps if both are installed.
-</Tip>
+### Without native code
+
+Flutter, React Native or a web view can open a plain link instead of building an intent: every
+field is also a query parameter of the link, URL-encoded.
+
+```text
+truemetrics.navigation://navigate
+    ?q=55.654436,12.361784
+    &returnApp=com.example.scanner
+    &route=%7B%22stops%22%3A%5B...%5D%2C%22next_stop%22%3A1%7D
+```
+
+<Note>
+Shown on several lines for reading; the link itself is one line. Use the `truemetrics.navigation://`
+scheme: it opens only the truemetrics app. `google.navigation:` may open Google Maps when both are
+installed.
+</Note>
+
+<CodeGroup>
+```dart Flutter (url_launcher)
+final route = Uri.encodeComponent(jsonEncode(routeJson));
+final link = Uri.parse(
+  'truemetrics.navigation://navigate?q=$lat,$lng&returnApp=com.example.scanner&route=$route',
+);
+if (!await launchUrl(link, mode: LaunchMode.externalApplication)) {
+  await launchUrl(Uri.parse('google.navigation:q=$lat,$lng&mode=d'));   // not installed
+}
+```
+
+```javascript React Native
+const route = encodeURIComponent(JSON.stringify(routeJson));
+const link = `truemetrics.navigation://navigate?q=${lat},${lng}&returnApp=com.example.scanner&route=${route}`;
+Linking.openURL(link).catch(() =>
+  Linking.openURL(`google.navigation:q=${lat},${lng}&mode=d`),   // not installed
+);
+```
+</CodeGroup>
 
 ## Install the app
 
