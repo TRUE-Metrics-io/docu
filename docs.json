@@ -39,11 +39,31 @@
         ]
       },
       {
-        "group": "Last Meter Visualisation",
+        "group": "Last Meter Visualisation and Routing",
         "pages": [
-          "Introduction_to_lastmeter_visualisation",
-          "Lastmeter_API_Reference",
-          "Lastmeter_Examples"
+          "lastmeter_routing_overview",
+          {
+            "group": "1 · In your own map",
+            "pages": [
+              "Introduction_to_lastmeter_visualisation",
+              "Lastmeter_API_Reference",
+              "Lastmeter_Examples"
+            ]
+          },
+          {
+            "group": "2 · truemetrics module",
+            "pages": [
+              "navigation_module",
+              "navigation_module_with_agent"
+            ]
+          },
+          {
+            "group": "3 · Standalone navigation app",
+            "pages": [
+              "navigation_app",
+              "navigation_app_with_agent"
+            ]
+          }
         ]
       }
     ]

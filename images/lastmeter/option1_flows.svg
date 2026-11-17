@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 860 250" width="860" height="250" font-family="Inter, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif">
+  <title>Option 1: the last meter from your own backend (1A) or from the REST API (1B)</title>
+  <defs>
+    <filter id="shadow" x="-10%" y="-20%" width="120%" height="140%">
+      <feDropShadow dx="0" dy="1" stdDeviation="1.5" flood-color="#000" flood-opacity="0.12"/>
+    </filter>
+  </defs>
+  <rect width="860" height="250" rx="14" fill="#FAFAF8"/>
+
+  <g fill="none" stroke="#BDBDBD" stroke-width="2.5">
+    <path id="f1a" d="M170,125 C215,125 215,70 260,70 H640"/>
+    <path id="f1b" d="M170,125 C215,125 215,180 260,180 H640"/>
+  </g>
+  <g fill="#0097a7">
+    <circle r="5"><animateMotion dur="3.4s" repeatCount="indefinite"><mpath href="#f1a"/></animateMotion></circle>
+    <circle r="5"><animateMotion dur="3.4s" begin="1.7s" repeatCount="indefinite"><mpath href="#f1a"/></animateMotion></circle>
+    <circle r="5"><animateMotion dur="2.2s" begin="0.5s" repeatCount="indefinite"><mpath href="#f1b"/></animateMotion></circle>
+  </g>
+
+  <rect x="24" y="85" width="146" height="80" rx="14" fill="#0097a7" filter="url(#shadow)"/>
+  <text x="97" y="120" text-anchor="middle" font-size="17" font-weight="700" fill="#FFFFFF">truemetrics</text>
+  <text x="97" y="141" text-anchor="middle" font-size="11.5" fill="#D8F3F5">P · E · waypoint · path</text>
+
+  <g font-size="12" font-weight="700" text-anchor="middle">
+    <circle cx="280" cy="70" r="15" fill="#616161"/><text x="280" y="74.5" fill="#FFFFFF">1A</text>
+    <circle cx="280" cy="180" r="15" fill="#616161"/><text x="280" y="184.5" fill="#FFFFFF">1B</text>
+  </g>
+
+  <!-- 1A -->
+  <rect x="312" y="58" width="112" height="24" rx="12" fill="#FFFFFF" stroke="#BDBDBD"/>
+  <text x="368" y="74" text-anchor="middle" font-size="11.5" fill="#424242">daily export</text>
+  <rect x="446" y="46" width="150" height="48" rx="8" fill="#FFFFFF" stroke="#9E9E9E" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="521" y="66" text-anchor="middle" font-size="13" font-weight="600" fill="#303334">Your backend</text>
+  <text x="521" y="83" text-anchor="middle" font-size="11" fill="#757575">joins it to your tours</text>
+
+  <!-- 1B -->
+  <rect x="330" y="168" width="250" height="24" rx="12" fill="#E0F4F6" stroke="#0097a7"/>
+  <text x="455" y="184" text-anchor="middle" font-size="11.5" fill="#00636E">REST API per stop · GeoJSON or PNG</text>
+
+  <!-- Your app -->
+  <g filter="url(#shadow)">
+    <rect x="640" y="40" width="196" height="170" rx="12" fill="#FFFFFF" stroke="#9E9E9E" stroke-width="1.5"/>
+  </g>
+  <text x="656" y="64" font-size="13.5" font-weight="600" fill="#303334">Your courier app</text>
+  <text x="656" y="81" font-size="11" fill="#757575">or dashboard: your own map</text>
+  <rect x="656" y="92" width="164" height="104" rx="6" fill="#F3F0E8"/>
+  <path d="M656,170 H820" stroke="#FFFFFF" stroke-width="10"/>
+  <path d="M760,170 V128" stroke="#FFFFFF" stroke-width="6"/>
+  <rect x="676" y="104" width="54" height="50" rx="2" fill="#1E9ED5" fill-opacity="0.18" stroke="#1E9ED5" stroke-width="1.5"/>
+  <path d="M762,122 L734,130" stroke="#1E9ED5" stroke-width="2.5" stroke-dasharray="4 3" stroke-linecap="round"/>
+  <g transform="translate(730,131)"><circle r="8" fill="#E63946"/><text y="4" text-anchor="middle" font-size="9.5" font-weight="700" fill="#FFFFFF">E</text></g>
+  <g transform="translate(770,118)"><rect x="-8" y="-8" width="16" height="16" rx="3" fill="#1E9ED5"/><text y="4.5" text-anchor="middle" font-size="11" font-weight="700" fill="#FFFFFF">P</text></g>
+</svg>
