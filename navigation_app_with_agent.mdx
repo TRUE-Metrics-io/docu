@@ -41,7 +41,13 @@ At each confirmed call site, keep the current link and add:
 - The way back: `returnApp` (this app's package name) or `returnUri` (see section 2).
 - `q` must be `<lat>,<lng>` in WGS84 degrees. If the current call sends an address string instead of coordinates, tell me: the truemetrics app does not geocode. Propose where the coordinates come from.
 
-IMPORTANT, the IDs: look them up in the truemetrics SDK metadata code; do not guess. Without them the courier is navigated to `q` without the last meter.
+IMPORTANT, the IDs: they tell the truemetrics app where to guide the courier and which last meter to show (parking, entrance, walk path). They are typically the app's address identifier or route point identifier, the same value the app sends as `address_id` in the truemetrics SDK metadata. Look them up in the metadata code; do not guess. Without them the courier is navigated to `q` without the last meter.
+
+Examples of what to look for:
+- A field such as `addressId`, `deliveryPointId`, `servicePointId`, `locationId` or `routePointId` on the stop model, passed to the SDK as `address_id`.
+- One ID per address (most apps): send it in both, `"ID": "20318293", "ID_sec": "20318293"`.
+- A delivery address and a separate parking or route point: the address as `ID` (entrance), the route point as `ID_sec` (parking), e.g. `"ID": "9005000000042962227", "ID_sec": "9005000000042962733"`.
+- Not an ID: a parcel or shipment number, a tour or route number, the stop's position in the tour, a database row ID that changes with every tour.
 
 Fallback: start the intent in a try/catch; on `ActivityNotFoundException` start it again without the package (Google Maps as before, it ignores the extra fields). Do not add a `<queries>` element only for this.
 
