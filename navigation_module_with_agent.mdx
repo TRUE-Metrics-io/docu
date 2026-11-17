@@ -1,0 +1,154 @@
+---
+title: 'Integrate the last meter module with an AI Agent'
+sidebarTitle: 'Module with agent'
+description: 'Copy-paste prompt that lets a coding agent add the truemetrics last meter module (option 2) to your courier app'
+---
+
+## How to use this prompt
+
+Paste the prompt below into your coding agent (Claude Code, Cursor, Copilot or similar) with your courier app repository open. The agent analyzes your app, proposes where the module goes and how your stop data maps to it, asks you to confirm every integration point, and then implements it.
+
+Before you start, request your API key and access to the module's Maven repository from truemetrics by emailing [jan@truemetrics.io](mailto:jan@truemetrics.io). The truemetrics SDK should already record in the app (see [Integrate with an AI agent](/with_agent)): the module shows what truemetrics learned from those recordings.
+
+## The prompt
+
+Copy everything inside the block.
+
+````markdown
+# Task: Add the truemetrics last meter module to this courier app
+
+You are adding the truemetrics last meter module (Android library `io.truemetrics:navigation`) to this courier/driver app. For one delivery stop, the module shows the "last meter" that truemetrics learned from the couriers' deliveries: where couriers park, the entrance they use, the walk path between them and the building. With routing on, it also navigates there: turn-by-turn to the waypoint on the street, into the parking, and it detects the arrival. Map, data loading, styling, permissions for location and the foreground service are handled by the module. The app only needs to: initialize it, build a request per stop, show it, and react when it ends.
+
+Work in this order:
+1. Analyze the codebase: language and framework, Gradle setup (minSdk, compileSdk, Kotlin version, repositories), the Application class, the stop/delivery screen and its activity, how a stop is opened, how navigation is started today (e.g. a `google.navigation:` intent to Google Maps), and the data models for stops, addresses and address IDs.
+2. For EACH integration point below, propose the exact file, function and line, explain why, and ASK ME TO CONFIRM before writing code. Ask all questions in one batch where possible.
+3. Implement only what I confirmed. Keep changes minimal and isolated (ideally one wrapper, e.g. `LastMeterNavigation`, plus the screen change).
+4. Use the API reference at the end of this prompt. If a signature differs in the installed version, the installed version wins.
+
+## API key
+
+The API key is issued by truemetrics. If I have not given you one, stop and tell me to request it from jan@truemetrics.io. Store it in the app's existing secrets/config mechanism (e.g. Gradle property into `BuildConfig`, .env), never hard-coded in source or committed to git. If the app already integrates the truemetrics SDK, ask me whether the same key is to be used.
+
+## 0. Check the platform and the mode
+
+- The module is a native Android library (Kotlin/Java). For Flutter or React Native apps, tell me so and propose either a small native Android bridge that launches `NavigationContract` from the host activity, or the truemetrics standalone navigation app (option 3, an intent instead of a library). Do not continue until I chose.
+- iOS: the module is Android only. In cross-platform apps guard every call so it is a no-op on iOS.
+- Ask me whether point-to-point navigation is to be off or on:
+  - Off, `routing = false` (the default): the module shows the stop's last meter and the courier's position, no route. The app keeps its current navigation (e.g. Google Maps) for the drive.
+  - On, `routing = true`: the module also routes, with guidance, rerouting and arrival detection, and replaces the current navigation call for stops where it is used.
+- Ask me how to show it:
+  - inside an existing screen (the fragment in a container of the stop screen, below the app's own header and above its own buttons), or
+  - as a screen of its own (`NavigationContract`, full screen with the module's own card and Back button).
+
+Confirm with me: platform, point-to-point navigation off or on, and presentation.
+
+## 1. Dependency and build setup
+
+Requirements: `minSdk` 23 or higher, `compileSdk` 37, Kotlin 2.3 or newer (the library brings `kotlin-stdlib` 2.4), Java 11 or newer bytecode.
+
+- Add the truemetrics Maven repository to the repositories (URL from me / from truemetrics) and `implementation("io.truemetrics:navigation:<version>")`.
+- Check the Kotlin and compileSdk versions. If they are below the requirements, tell me what has to change and ask before raising them.
+- The library's manifest merges these into the app: `INTERNET`, `ACCESS_NETWORK_STATE`, `ACCESS_FINE_LOCATION`, `ACCESS_COARSE_LOCATION`, `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_LOCATION`, `POST_NOTIFICATIONS`, the activity `TruemetricsNavigationActivity` and the service `DriveService` (foregroundServiceType location). Make sure the app's manifest removes none of them (`tools:node="remove"`). After a build, check the merged manifest (`app/build/outputs/logs/manifest-merger-*-report.txt`).
+- If the app uses MapLibre itself, tell me: the module sets MapLibre's process-wide settings at its first `init`.
+
+Show me the Gradle and manifest diff before applying it.
+
+## 2. Initialization
+
+- Call `TruemetricsNavigation.init(applicationContext, apiKey)` in `Application.onCreate`, on the main thread. Not later: after Android killed the process it restores an open navigation directly, and only `Application.onCreate` runs before it.
+- If the app has no Application class, create one and register it in the manifest.
+- Do not pass `simulateByDefault` (demo only).
+
+Confirm with me: the Application class and where the key comes from.
+
+## 3. Map the stop to a `NavigationRequest`
+
+One request per stop. Map this app's stop model:
+
+| Request field | Content |
+| --- | --- |
+| `destination` | `LatLon(lat, lon)` of the stop in WGS84, latitude first: the coordinate the app hands to Google Maps today. Required. |
+| `id` | The stop's `address_id`, exactly as sent to truemetrics in the SDK metadata. |
+| `idSecondary` | Leave it out by default. Only if the app uses a second identifier for the stop (e.g. a separate parking or route point) and I confirm it. |
+| `address` | Street and house number, one line. |
+| `addressDetail` | A second line, e.g. "Planned Arrival 14:22" if the app has a planned time, else postcode and city; ask me. |
+| `routing` | Point-to-point navigation: `false` off, `true` on. |
+| `showCard` | `true` with the module's own card (full screen). `false` when the module sits inside the app's own screen that shows the stop and its own buttons. |
+| `backLabel` | The card's Back button text, e.g. "Back to stop". `null` when `showCard = false`. |
+| `endOnArrival` | `true` when `showCard = false`; otherwise leave it out. |
+
+IMPORTANT, the IDs: they tell the module where to guide the courier and which last meter to show (parking, entrance, walk path). They are typically the app's address identifier or route point identifier, the same value the app sends as `address_id` in the truemetrics SDK metadata. Look them up in the metadata code; do not guess. Without them the module shows only the destination.
+
+Examples of what to look for:
+- A field such as `addressId`, `deliveryPointId`, `servicePointId`, `locationId` or `routePointId` on the stop model, passed to the SDK as `address_id`.
+- The request then carries it as `id = "<address_id>"`.
+- Only if the app uses a second identifier for the stop (e.g. a separate parking or route point next to the address), `idSecondary` can carry it. Leave it out by default and ask me before using it.
+- Not an ID: a parcel or shipment number, a tour or route number, the stop's position in the tour, a database row ID that changes with every tour.
+
+Do not set `simulate` or `simulationStart` (demo only).
+
+Confirm with me: the field mapping from this app's stop model.
+
+## 4. Show the module
+
+Inside an existing screen:
+- The screen's activity must be a `FragmentActivity` (an `AppCompatActivity` is one).
+- Add a container (`FrameLayout` or `FragmentContainerView`) of at least about 400 dp height where the map goes.
+- Add the fragment only when `savedInstanceState == null`; Android restores it itself after configuration changes and process death:
+  `supportFragmentManager.beginTransaction().add(R.id.<container>, TruemetricsNavigationFragment.newInstance(request)).commit()`
+- In Compose: `AndroidFragment<TruemetricsNavigationFragment>(modifier, arguments = TruemetricsNavigationFragment.arguments(request))` from `androidx.fragment:fragment-compose`.
+- One module per activity at a time. Before showing the next stop, remove the old fragment with `commitNow()` (or `commitNowAllowingStateLoss()`), then add the new one. Never use `replace` for this.
+- Declare the activity with `android:configChanges="uiMode"` and a fixed orientation (e.g. `android:screenOrientation="portrait"`), or a dark-mode switch or rotation recreates the map mid-drive. Ask me before changing an existing activity's orientation.
+- If the activity sets its theme in code, set it again after adding the fragment.
+
+As a screen of its own:
+- `registerForActivityResult(NavigationContract()) { result -> ... }` in the activity or fragment that opens the stop, then `launch(request)`.
+
+Confirm with me: the screen, the container and where the stop is opened.
+
+## 5. React to the end
+
+The navigation ends with `NavigationResult.Arrived` (at the stop, after the arrival countdown) or `NavigationResult.Ended` (Back, ✕ or the system Back before arriving).
+
+- Inside a screen: implement `TruemetricsNavigationFragment.Host` on the activity (or the parent fragment). `onNavigationFinished(result)` is called at once, also while the screen is out of sight (phone locked). Remove the fragment there with `commitNowAllowingStateLoss()`. Alternative: `setFragmentResultListener(TruemetricsNavigationFragment.RESULT_KEY, ...)` with `TruemetricsNavigationFragment.result(bundle)`, delivered when the screen is started.
+- With `NavigationContract`: the result arrives in the activity result callback.
+- Decide with me what each result does in this app (e.g. `Arrived` opens the delivery form, `Ended` returns to the stop list). Do NOT log truemetrics delivery metadata here: a delivery event belongs to the moment the delivery is finalized, as before.
+
+Confirm with me: what `Arrived` and `Ended` do.
+
+## 6. Navigation on only: replace the current navigation call
+
+If I chose point-to-point navigation on, find where the app starts external navigation for a stop (e.g. `google.navigation:` or `geo:` intents, Waze links) and propose replacing it with the module for the stops where routing should happen. Keep the old call as a fallback if I want one.
+
+Confirm with me: which calls are replaced.
+
+## API reference
+
+Package `io.truemetrics.navigation`.
+
+| Purpose | Call |
+| --- | --- |
+| Init | `TruemetricsNavigation.init(context, apiKey)` (optional third parameter `simulateByDefault`, demo only) |
+| Request | `NavigationRequest(destination: LatLon, address: String? = null, addressDetail: String? = null, id: String? = null, idSecondary: String? = null, backLabel: String? = "Back", simulate: Boolean = false, simulationStart: LatLon? = null, routing: Boolean = false, showCard: Boolean = true, endOnArrival: Boolean? = null)`; invalid coordinates throw `IllegalArgumentException` |
+| Position | `LatLon(lat: Double, lon: Double)`, WGS84 degrees |
+| Fragment | `TruemetricsNavigationFragment.newInstance(request)`, `TruemetricsNavigationFragment.arguments(request)` (for creation by class) |
+| End, as host | `TruemetricsNavigationFragment.Host { fun onNavigationFinished(result: NavigationResult) }` on the activity or parent fragment |
+| End, as fragment result | key `TruemetricsNavigationFragment.RESULT_KEY`, read with `TruemetricsNavigationFragment.result(bundle)` |
+| Own screen | `registerForActivityResult(NavigationContract()) { result: NavigationResult -> }`, `launch(request)` |
+| Result | `NavigationResult.Arrived`, `NavigationResult.Ended` |
+
+Behavior to know:
+- Without routing: the map shows parking (P), entrance (E), walk path and building, plus the courier's position as a dot (precise location only), always in one frame. Ends with Back.
+- With routing: route to the waypoint (else parking, else destination), turn-by-turn without voice, rerouting, arrival within 30 m of the parking or entrance and slower than 15 km/h for 20 s. A foreground service keeps the drive going with the phone locked.
+- Without last-meter data for the IDs: the destination, with the building at it highlighted.
+- The module asks for location itself, and for notifications at the first drive (Android 13+).
+
+## Done when
+
+- Dependency, repository and build versions in place; merged manifest keeps all of the module's permissions, its activity and its service.
+- `TruemetricsNavigation.init` in `Application.onCreate` with the key from the app's config.
+- The stop screen shows the module with point-to-point navigation off or on as confirmed, with the IDs the app sends as `address_id` metadata.
+- One module per activity; the old fragment removed with `commitNow` before the next; activity declared with `configChanges="uiMode"` and a fixed orientation.
+- `Arrived` and `Ended` handled as confirmed.
+- Give me a short summary of every file changed and a test plan: on a real Android device (also an older one your couriers use), a stop with known last-meter data and one without, location denied once, the phone locked during a drive with navigation on, and the next stop after the first ended.
+````
