@@ -1,7 +1,7 @@
 ---
 title: 'Integrate the last meter module with an AI Agent'
 sidebarTitle: 'Module with agent'
-description: 'Copy-paste prompt that lets a coding agent add the truemetrics last meter module (2A or 2B) to your courier app'
+description: 'Copy-paste prompt that lets a coding agent add the truemetrics last meter module (option 2) to your courier app'
 ---
 
 ## How to use this prompt
@@ -33,14 +33,14 @@ The API key is issued by truemetrics. If I have not given you one, stop and tell
 
 - The module is a native Android library (Kotlin/Java). For Flutter or React Native apps, tell me so and propose either a small native Android bridge that launches `NavigationContract` from the host activity, or the truemetrics standalone navigation app (option 3, an intent instead of a library). Do not continue until I chose.
 - iOS: the module is Android only. In cross-platform apps guard every call so it is a no-op on iOS.
-- Ask me which mode I want:
-  - 2A, `routing = false` (the default): the module shows the stop's last meter and the courier's position, no route. The app keeps its current navigation (e.g. Google Maps) for the drive.
-  - 2B, `routing = true`: the module also routes, with guidance, rerouting and arrival detection, and replaces the current navigation call for stops where it is used.
+- Ask me whether point-to-point navigation is to be off or on:
+  - Off, `routing = false` (the default): the module shows the stop's last meter and the courier's position, no route. The app keeps its current navigation (e.g. Google Maps) for the drive.
+  - On, `routing = true`: the module also routes, with guidance, rerouting and arrival detection, and replaces the current navigation call for stops where it is used.
 - Ask me how to show it:
   - inside an existing screen (the fragment in a container of the stop screen, below the app's own header and above its own buttons), or
   - as a screen of its own (`NavigationContract`, full screen with the module's own card and Back button).
 
-Confirm with me: platform, mode (2A or 2B), and presentation.
+Confirm with me: platform, point-to-point navigation off or on, and presentation.
 
 ## 1. Dependency and build setup
 
@@ -71,8 +71,8 @@ One request per stop. Map this app's stop model:
 | `id` | The stop's `address_id`, exactly as sent to truemetrics in the SDK metadata. |
 | `idSecondary` | Leave it out by default. Only if the app uses a second identifier for the stop (e.g. a separate parking or route point) and I confirm it. |
 | `address` | Street and house number, one line. |
-| `addressDetail` | Postcode and city. |
-| `routing` | `false` for 2A, `true` for 2B. |
+| `addressDetail` | A second line, e.g. "Planned Arrival 14:22" if the app has a planned time, else postcode and city; ask me. |
+| `routing` | Point-to-point navigation: `false` off, `true` on. |
 | `showCard` | `true` with the module's own card (full screen). `false` when the module sits inside the app's own screen that shows the stop and its own buttons. |
 | `backLabel` | The card's Back button text, e.g. "Back to stop". `null` when `showCard = false`. |
 | `endOnArrival` | `true` when `showCard = false`; otherwise leave it out. |
@@ -116,9 +116,9 @@ The navigation ends with `NavigationResult.Arrived` (at the stop, after the arri
 
 Confirm with me: what `Arrived` and `Ended` do.
 
-## 6. 2B only: replace the current navigation call
+## 6. Navigation on only: replace the current navigation call
 
-If I chose 2B, find where the app starts external navigation for a stop (e.g. `google.navigation:` or `geo:` intents, Waze links) and propose replacing it with the module for the stops where routing should happen. Keep the old call as a fallback if I want one.
+If I chose point-to-point navigation on, find where the app starts external navigation for a stop (e.g. `google.navigation:` or `geo:` intents, Waze links) and propose replacing it with the module for the stops where routing should happen. Keep the old call as a fallback if I want one.
 
 Confirm with me: which calls are replaced.
 
@@ -147,8 +147,8 @@ Behavior to know:
 
 - Dependency, repository and build versions in place; merged manifest keeps all of the module's permissions, its activity and its service.
 - `TruemetricsNavigation.init` in `Application.onCreate` with the key from the app's config.
-- The stop screen shows the module for the confirmed mode (2A or 2B), with the IDs the app sends as `address_id` metadata.
+- The stop screen shows the module with point-to-point navigation off or on as confirmed, with the IDs the app sends as `address_id` metadata.
 - One module per activity; the old fragment removed with `commitNow` before the next; activity declared with `configChanges="uiMode"` and a fixed orientation.
 - `Arrived` and `Ended` handled as confirmed.
-- Give me a short summary of every file changed and a test plan: on a real Android device (also an older one your couriers use), a stop with known last-meter data and one without, location denied once, the phone locked during a 2B drive, and the next stop after the first ended.
+- Give me a short summary of every file changed and a test plan: on a real Android device (also an older one your couriers use), a stop with known last-meter data and one without, location denied once, the phone locked during a drive with navigation on, and the next stop after the first ended.
 ````

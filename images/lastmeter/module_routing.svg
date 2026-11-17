@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 540" width="900" height="540" font-family="Inter, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif">
-  <title>The truemetrics module inside your app: routing off (2A) and routing on (2B)</title>
+  <title>The truemetrics module inside your app: point-to-point navigation off and on</title>
   <defs>
     <clipPath id="screen"><rect x="10" y="12" width="210" height="416" rx="18"/></clipPath>
     <clipPath id="map"><rect x="10" y="62" width="210" height="296"/></clipPath>
@@ -34,9 +34,9 @@
 
   <rect width="900" height="540" rx="14" fill="#FAFAF8"/>
 
-  <!-- ===== 2A: routing = false ===== -->
+  <!-- ===== Navigation off: routing = false ===== -->
   <g transform="translate(30,20)">
-    <text x="0" y="22" font-size="18" font-weight="700" fill="#00737F">2A · routing = false</text>
+    <text x="0" y="22" font-size="18" font-weight="700" fill="#00737F">Navigation off · routing = false</text>
     <text x="0" y="44" font-size="13" fill="#616161">Last meter only. Your navigation stays as it is.</text>
   </g>
   <g transform="translate(30,70)">
@@ -67,9 +67,9 @@
     <text x="0" y="110">• Ends with Back</text>
   </g>
 
-  <!-- ===== 2B: routing = true ===== -->
+  <!-- ===== Navigation on: routing = true ===== -->
   <g transform="translate(460,20)">
-    <text x="0" y="22" font-size="18" font-weight="700" fill="#00737F">2B · routing = true</text>
+    <text x="0" y="22" font-size="18" font-weight="700" fill="#00737F">Navigation on · routing = true</text>
     <text x="0" y="44" font-size="13" fill="#616161">Route, guidance and the last meter in your app.</text>
   </g>
   <g transform="translate(460,70)">

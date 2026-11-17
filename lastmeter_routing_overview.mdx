@@ -29,7 +29,7 @@ practices with it (option 2), or with the truemetrics standalone navigation app 
 Maps or Waze (option 3).
 
 <Frame caption="Where the last meter comes from, and who draws it">
-  <img src="/images/lastmeter/options_overview.svg" alt="Diagram of the five options: 1A export to your backend, 1B REST API, 2A module without routing, 2B module with routing, 3 standalone navigation app with app switch" />
+  <img src="/images/lastmeter/options_overview.svg" alt="Diagram of the options: 1A export to your backend, 1B REST API, 2 module in your app with point-to-point navigation off or on, 3 standalone navigation app with app switch" />
 </Frame>
 
 <CardGroup cols={2}>
@@ -41,13 +41,10 @@ Maps or Waze (option 3).
     Your app asks the truemetrics REST API per stop and gets ready-styled GeoJSON (or a PNG) for
     your own map.
   </Card>
-  <Card title="2A · Module in your app, without routing" icon="map-location-dot" href="/navigation_module">
+  <Card title="2 · Module in your app" icon="map-location-dot" href="/navigation_module">
     The truemetrics module shows the stop's last meter and the courier's position inside your app.
-    Your navigation stays as it is.
-  </Card>
-  <Card title="2B · Module in your app, with routing" icon="route" href="/navigation_module">
-    The same module also routes: turn-by-turn to the waypoint, into the parking, arrival at the
-    door. One flag, `routing = true`.
+    Point-to-point navigation can be off (your navigation stays as it is) or on (turn-by-turn to the
+    waypoint, into the parking, arrival at the door): one flag, `routing`.
   </Card>
   <Card title="3 · Standalone navigation app" icon="arrow-right-arrow-left" href="/navigation_app">
     The truemetrics standalone navigation app replaces Google Maps or Waze. Your courier app sends
@@ -63,8 +60,7 @@ Maps or Waze (option 3).
       <th style={{width: "16%"}}></th>
       <th><strong>1A</strong> own map, own backend</th>
       <th><strong>1B</strong> own map, REST API</th>
-      <th><strong>2A</strong> module, no routing</th>
-      <th><strong>2B</strong> module, routing</th>
+      <th><strong>2</strong> module in your app</th>
       <th><strong>3</strong> standalone app</th>
     </tr>
   </thead>
@@ -74,7 +70,6 @@ Maps or Waze (option 3).
       <td style={{minWidth: 0}}>●●●●●</td>
       <td style={{minWidth: 0}}>●●●●○</td>
       <td style={{minWidth: 0}}>●●○○○</td>
-      <td style={{minWidth: 0}}>●●○○○</td>
       <td style={{minWidth: 0}}>●○○○○</td>
     </tr>
     <tr>
@@ -82,23 +77,20 @@ Maps or Waze (option 3).
       <td style={{minWidth: 0}}>Import, delivery to devices, map, styling</td>
       <td style={{minWidth: 0}}>Map, styling, one request per stop</td>
       <td style={{minWidth: 0}}>A place in your screen</td>
-      <td style={{minWidth: 0}}>A place in your screen</td>
       <td style={{minWidth: 0}}>Extras on your Google Maps call</td>
     </tr>
     <tr>
       <td style={{minWidth: 0}}><strong>Best practices</strong></td>
       <td style={{minWidth: 0}}>Yours to implement</td>
       <td style={{minWidth: 0}}>Yours to implement; styling hints included</td>
-      <td style={{minWidth: 0}}>Built in</td>
-      <td style={{minWidth: 0}}>Built in, plus routing to the parking</td>
+      <td style={{minWidth: 0}}>Built in; with navigation on, plus routing to the parking</td>
       <td style={{minWidth: 0}}>Built in, plus the way back</td>
     </tr>
     <tr>
       <td style={{minWidth: 0}}><strong>Routing</strong></td>
       <td style={{minWidth: 0}}>Your own</td>
       <td style={{minWidth: 0}}>Your own</td>
-      <td style={{minWidth: 0}}>Your own</td>
-      <td style={{minWidth: 0}}>truemetrics routing*</td>
+      <td style={{minWidth: 0}}>Off: your own<br/>On: truemetrics routing*</td>
       <td style={{minWidth: 0}}>truemetrics routing*</td>
     </tr>
     <tr>
@@ -106,22 +98,19 @@ Maps or Waze (option 3).
       <td style={{minWidth: 0}}>Full</td>
       <td style={{minWidth: 0}}>Full</td>
       <td style={{minWidth: 0}}>Your screen, truemetrics map</td>
-      <td style={{minWidth: 0}}>Your screen, truemetrics map</td>
       <td style={{minWidth: 0}}>None</td>
     </tr>
     <tr>
       <td style={{minWidth: 0}}><strong>Control</strong></td>
       <td style={{minWidth: 0}}>●●●●●</td>
       <td style={{minWidth: 0}}>●●●●○</td>
-      <td style={{minWidth: 0}}>●●●○○</td>
-      <td style={{minWidth: 0}}>●●○○○</td>
+      <td style={{minWidth: 0}}>Off: ●●●○○<br/>On: ●●○○○</td>
       <td style={{minWidth: 0}}>●●○○○</td>
     </tr>
     <tr>
       <td style={{minWidth: 0}}><strong>Platforms</strong></td>
       <td style={{minWidth: 0}}>Any</td>
       <td style={{minWidth: 0}}>Any</td>
-      <td style={{minWidth: 0}}>Android</td>
       <td style={{minWidth: 0}}>Android</td>
       <td style={{minWidth: 0}}>Android</td>
     </tr>
@@ -133,7 +122,7 @@ Maps or Waze (option 3).
 **Integration effort**: what it takes to get the last meter in front of the courier. **Flexibility**:
 how freely you shape the look and the flow. **Control**: how much of the data and the logic lives in
 your own systems: with 1A a full copy of the data is yours and nothing is asked of truemetrics at
-delivery time; with 2B and 3 the drive itself runs in truemetrics software, as it runs in Google
+delivery time; with 2 (navigation on) and 3 the drive itself runs in truemetrics software, as it runs in Google
 Maps today.
 
 ### Which one fits
@@ -141,9 +130,9 @@ Maps today.
 - **You keep your navigation** (Google Maps, HERE, your own) and your own map, with full control
   over data and design: **1A**, if your backend already distributes tours to the devices; **1B**,
   if the app may ask truemetrics directly.
-- **You want the last meter shown the way couriers read it best, with little work**, next to the
-  navigation you have: **2A**.
-- **You want navigation inside your own app**, made for the last meter: **2B**.
+- **You want the last meter shown the way couriers read it best, inside your own app, with little
+  work**: **2**. Point-to-point navigation off, next to the navigation you have; on, navigation
+  made for the last meter inside your app.
 - **Your couriers drive with Google Maps or Waze today**: **3**. The fewest changes, and the
   courier gets routing to the parking, the walk to the entrance and the way back to your app.
 
@@ -161,14 +150,14 @@ Options can be combined: for example 1B in a dispatcher dashboard and 3 on the c
     your account.
   </Step>
   <Step title="Your stop identifiers">
-    Each stop is looked up by the **entrance** identifier and the **parking** identifier you send as
-    metadata. Many systems use one address ID for both: pass it twice.
+    Each stop is looked up by the `address_id` you send as metadata: typically your address
+    identifier or route point identifier.
   </Step>
 </Steps>
 
 ## Best practices for the last meter
 
-What the truemetrics module and the standalone app (options 2A, 2B and 3) do out of the box. With options 1A and 1B, these
+What the truemetrics module and the standalone app (options 2 and 3) do out of the box. With options 1A and 1B, these
 are the rules to follow in your own map.
 
 1. **Route to the waypoint, not to the address pin.** The routing target is the waypoint, else the

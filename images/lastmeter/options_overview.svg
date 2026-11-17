@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 620" width="960" height="620" font-family="Inter, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif">
-  <title>Five ways to bring the truemetrics last meter to couriers</title>
+  <title>Ways to bring the truemetrics last meter to couriers</title>
   <defs>
     <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
       <path d="M0,0 L10,5 L0,10 Z" fill="#757575"/>
@@ -31,8 +31,8 @@
   <g fill="none" stroke="#BDBDBD" stroke-width="2.5">
     <path id="c1a" d="M210,300 C255,300 255,130 300,130 H650"/>
     <path id="c1b" d="M210,300 C255,300 255,210 300,210 H650"/>
-    <path id="c2a" d="M210,300 C255,300 255,330 300,330 H470"/>
-    <path id="c2b" d="M210,300 C255,300 255,415 300,415 H470"/>
+    <path id="c2a" d="M210,300 C255,300 255,372 300,372 H340 C400,372 400,330 460,330 H470"/>
+    <path id="c2b" d="M210,300 C255,300 255,372 300,372 H340 C400,372 400,415 460,415 H470"/>
     <path id="c2c" d="M210,300 C255,300 255,550 300,550 H470"/>
   </g>
   <g fill="#0097a7">
@@ -69,8 +69,7 @@
   <g font-size="12" font-weight="700" text-anchor="middle">
     <circle cx="320" cy="130" r="15" fill="#616161"/><text x="320" y="134.5" fill="#FFFFFF">1A</text>
     <circle cx="320" cy="210" r="15" fill="#616161"/><text x="320" y="214.5" fill="#FFFFFF">1B</text>
-    <circle cx="320" cy="330" r="15" fill="#0097a7"/><text x="320" y="334.5" fill="#FFFFFF">2A</text>
-    <circle cx="320" cy="415" r="15" fill="#0097a7"/><text x="320" y="419.5" fill="#FFFFFF">2B</text>
+    <circle cx="320" cy="372" r="15" fill="#0097a7"/><text x="320" y="376.5" fill="#FFFFFF">2</text>
     <circle cx="320" cy="550" r="15" fill="#0097a7"/><text x="320" y="554.5" fill="#FFFFFF">3</text>
   </g>
 
@@ -95,11 +94,11 @@
     <text x="666" y="224" font-size="11.5" fill="#757575">your map draws the ready-styled layers</text>
   </g>
 
-  <!-- 2A: module, no routing -->
+  <!-- 2: module, point-to-point navigation off -->
   <g>
     <rect x="470" y="300" width="450" height="60" rx="10" fill="#FFFFFF" stroke="#9E9E9E" stroke-width="1.5" filter="url(#shadow)"/>
     <text x="486" y="326" font-size="13.5" font-weight="600" fill="#303334">Your courier app</text>
-    <text x="486" y="344" font-size="11" fill="#757575">your screen</text>
+    <text x="486" y="344" font-size="11" font-weight="700" fill="#00737F">navigation off</text>
     <rect x="618" y="308" width="292" height="44" rx="8" fill="#E0F4F6" stroke="#0097a7" stroke-width="1.5"/>
     <text x="634" y="327" font-size="13" font-weight="600" fill="#00636E">truemetrics module</text>
     <text x="634" y="344" font-size="11.5" fill="#00737F">last meter view, no route</text>
@@ -110,11 +109,11 @@
     </g>
   </g>
 
-  <!-- 2B: module with routing -->
+  <!-- 2: module, point-to-point navigation on -->
   <g>
     <rect x="470" y="385" width="450" height="60" rx="10" fill="#FFFFFF" stroke="#9E9E9E" stroke-width="1.5" filter="url(#shadow)"/>
     <text x="486" y="411" font-size="13.5" font-weight="600" fill="#303334">Your courier app</text>
-    <text x="486" y="429" font-size="11" fill="#757575">your screen</text>
+    <text x="486" y="429" font-size="11" font-weight="700" fill="#00737F">navigation on</text>
     <rect x="618" y="393" width="292" height="44" rx="8" fill="#E0F4F6" stroke="#0097a7" stroke-width="1.5"/>
     <text x="634" y="412" font-size="13" font-weight="600" fill="#00636E">truemetrics module</text>
     <text x="634" y="429" font-size="11.5" fill="#00737F">route + turn-by-turn + last meter</text>

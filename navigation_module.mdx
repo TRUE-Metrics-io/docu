@@ -1,20 +1,20 @@
 ---
-title: 'Option 2A and 2B · The last meter module in your app'
+title: 'Option 2 · The last meter module in your app'
 sidebarTitle: 'Module in your app'
-description: 'An Android library that shows a stop’s last meter inside your courier app, with or without routing.'
+description: 'An Android library that shows a stop’s last meter inside your courier app, with point-to-point navigation off or on.'
 ---
 
 The truemetrics last meter module (`io.truemetrics:navigation`) is the screen of the
 [truemetrics standalone navigation app](/navigation_app) as an Android library: the map, the last
 meter, the routing and the best practices, inside your own app. One stop at a time.
 
-It has one switch that matters most, `routing`:
+Point-to-point navigation can be off or on, with one switch, `routing`:
 
-<Frame caption="The module inside your screen: last meter only (2A) and with routing (2B)">
+<Frame caption="The module inside your screen: point-to-point navigation off (last meter only) and on">
   <img src="/images/lastmeter/module_routing.svg" alt="Two phones with a courier app around the truemetrics module. Left: parking, entrance, walk path and the courier's position. Right: a route with turn banner leading to the waypoint and into the parking." />
 </Frame>
 
-| | **2A** `routing = false` (default) | **2B** `routing = true` |
+| | **Navigation off** `routing = false` (default) | **Navigation on** `routing = true` |
 | --- | --- | --- |
 | For | Apps that navigate with something else (Google Maps, their own) | Apps that want navigation inside, made for the last meter |
 | The map shows | Parking, entrance, walk path, building, and the courier's position as a dot, always in one frame | The route to the waypoint and into the parking, turn-by-turn, then parking, entrance, walk path, building |
@@ -91,9 +91,9 @@ which needs no native code at all.
     val request = NavigationRequest(
         destination = LatLon(stop.lat, stop.lon),
         address = stop.street,              // "Gymnasievej 39"
-        addressDetail = stop.postcodeCity,  // "2625 Vallensbæk"
+        addressDetail = "Planned Arrival ${stop.plannedArrival}",  // "Planned Arrival 14:22"
         id = stop.addressId,                // as sent in the metadata as address_id
-        routing = true,                     // 2B; leave out for 2A
+        routing = true,                     // point-to-point navigation on; leave out for off
     )
     ```
   </Step>
@@ -190,9 +190,9 @@ class StopActivity : AppCompatActivity(), TruemetricsNavigationFragment.Host {
                 NavigationRequest(
                     destination = LatLon(stop.lat, stop.lon),
                     address = stop.street,
-                    addressDetail = stop.postcodeCity,
+                    addressDetail = "Planned Arrival ${stop.plannedArrival}",
                     id = stop.addressId,
-                    routing = stop.routeInApp,       // false: 2A, true: 2B
+                    routing = stop.routeInApp,       // point-to-point navigation off or on
                     // The stop's details and the way out are this screen's own, around the map
                     showCard = false,
                     backLabel = null,
@@ -259,7 +259,7 @@ class StopActivity : AppCompatActivity(), TruemetricsNavigationFragment.Host {
 </ParamField>
 
 <ParamField path="routing" type="Boolean" default="false">
-  `false` (2A): the last meter and the courier's position, no route. `true` (2B): route to the
+  Point-to-point navigation. `false`: the last meter and the courier's position, no route. `true`: route to the
   waypoint (else the parking, else the destination), turn-by-turn guidance, rerouting, arrival.
 </ParamField>
 
@@ -268,7 +268,8 @@ class StopActivity : AppCompatActivity(), TruemetricsNavigationFragment.Host {
 </ParamField>
 
 <ParamField path="addressDetail" type="String">
-  The card's second line: postcode and city.
+  The card's second line, shown only with `address`: a line of your choice, for example
+  "Planned Arrival 14:22", or postcode and city. One line, a longer one is cut with "…".
 </ParamField>
 
 <ParamField path="showCard" type="Boolean" default="true">
