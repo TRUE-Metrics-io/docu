@@ -99,7 +99,7 @@ extra wins over a parameter of the same name. Extras are strings, except `lastMe
 
 <ParamField path="returnUri" type="string">
   A browsable deep link of your app, opened to switch back instead of `returnApp`, for example to
-  land on the stop's delivery screen: `scanner://stop/2`. `file:`, `content:` and `intent:` links are
+  land on the stop's delivery screen: `scanner://stop/2`. `file:`, `content:`, `intent:` and `android-app:` links are
   ignored.
 </ParamField>
 
@@ -134,9 +134,9 @@ The whole tour (up to 200 stops) and which of its stops comes next:
 | Field | Meaning |
 | --- | --- |
 | `next_stop` | Index in `stops` of the stop to drive to, counted from 0. |
-| `ID` | The stop's **entrance** identifier, as sent in the metadata. |
+| `ID` | The stop's **entrance** identifier, as sent in the metadata. A string or a number. |
 | `ID_sec` | The stop's **parking** identifier, as sent in the metadata. If your system has one ID per address, send it in both. |
-| `line1`, `line2` | Optional: the card's two lines, street and number, postcode and city. Each on one line, cut with "…" when longer. |
+| `line1`, `line2` | Optional: the card's two lines, street and number, postcode and city. Each on one line, cut with "…" when longer. `line2` shows only with `line1`; without `line1` the card shows the `(label)` from `q`, if any. |
 
 Only the stop at `next_stop` is read; other fields are ignored. A `route` that cannot be read, a
 `next_stop` outside the list or a stop with none of these fields counts as no `route`: the app
