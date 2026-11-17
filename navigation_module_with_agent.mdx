@@ -68,8 +68,8 @@ One request per stop. Map this app's stop model:
 | Request field | Content |
 | --- | --- |
 | `destination` | `LatLon(lat, lon)` of the stop in WGS84, latitude first: the coordinate the app hands to Google Maps today. Required. |
-| `id` | The ENTRANCE address identifier, exactly as sent to truemetrics as `address_id` in the SDK metadata. |
-| `idSecondary` | The PARKING address identifier, as sent in the metadata. If the app has one ID per address, pass the same value in `id` and `idSecondary`. |
+| `id` | The stop's `address_id`, exactly as sent to truemetrics in the SDK metadata. |
+| `idSecondary` | Leave it out by default. Only if the app uses a second identifier for the stop (e.g. a separate parking or route point) and I confirm it. |
 | `address` | Street and house number, one line. |
 | `addressDetail` | Postcode and city. |
 | `routing` | `false` for 2A, `true` for 2B. |
@@ -77,12 +77,12 @@ One request per stop. Map this app's stop model:
 | `backLabel` | The card's Back button text, e.g. "Back to stop". `null` when `showCard = false`. |
 | `endOnArrival` | `true` when `showCard = false`; otherwise leave it out. |
 
-IMPORTANT, the IDs: they tell the module where to guide the courier and which last meter to show (parking, entrance, walk path). They are typically the app's address identifier or route point identifier, the same value the app sends as `address_id` (and, if separate, the parking ID) in the truemetrics SDK metadata. Look them up in the metadata code; do not guess. Without them the module shows only the destination.
+IMPORTANT, the IDs: they tell the module where to guide the courier and which last meter to show (parking, entrance, walk path). They are typically the app's address identifier or route point identifier, the same value the app sends as `address_id` in the truemetrics SDK metadata. Look them up in the metadata code; do not guess. Without them the module shows only the destination.
 
 Examples of what to look for:
 - A field such as `addressId`, `deliveryPointId`, `servicePointId`, `locationId` or `routePointId` on the stop model, passed to the SDK as `address_id`.
-- One ID per address (most apps): pass it in both, `id = "20318293", idSecondary = "20318293"`.
-- A delivery address and a separate parking or route point: the address as `id` (entrance), the route point as `idSecondary` (parking), e.g. `id = "9005000000042962227", idSecondary = "9005000000042962733"`.
+- The request then carries it as `id = "<address_id>"`.
+- Only if the app uses a second identifier for the stop (e.g. a separate parking or route point next to the address), `idSecondary` can carry it. Leave it out by default and ask me before using it.
 - Not an ID: a parcel or shipment number, a tour or route number, the stop's position in the tour, a database row ID that changes with every tour.
 
 Do not set `simulate` or `simulationStart` (demo only).

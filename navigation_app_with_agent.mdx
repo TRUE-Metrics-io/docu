@@ -37,7 +37,7 @@ Confirm with me: the detected framework and all call sites found.
 
 At each confirmed call site, keep the current link and add:
 - The target: `setPackage("io.truemetrics.navigation")` (native), so no chooser and no Google Maps opens.
-- `route`: the tour as JSON (see the reference) with the stop to drive to as `next_stop`. Per stop `ID` = the ENTRANCE address identifier and `ID_sec` = the PARKING address identifier, exactly as sent to truemetrics as `address_id` in the SDK metadata (if the app has one ID per address, send it in both), plus `line1` (street and number) and `line2` (postcode and city).
+- `route`: the tour as JSON (see the reference) with the stop to drive to as `next_stop`. Per stop `ID` = the stop's `address_id`, exactly as sent to truemetrics in the SDK metadata, plus `line1` (street and number) and `line2` (a second line, e.g. "Planned Arrival 14:22" if the app has a planned time, else postcode and city; ask me). `ID_sec` only as described under the IDs below.
 - The way back: `returnApp` (this app's package name) or `returnUri` (see section 2).
 - `q` must be `<lat>,<lng>` in WGS84 degrees. If the current call sends an address string instead of coordinates, tell me: the truemetrics app does not geocode. Propose where the coordinates come from.
 
@@ -45,8 +45,8 @@ IMPORTANT, the IDs: they tell the truemetrics app where to guide the courier and
 
 Examples of what to look for:
 - A field such as `addressId`, `deliveryPointId`, `servicePointId`, `locationId` or `routePointId` on the stop model, passed to the SDK as `address_id`.
-- One ID per address (most apps): send it in both, `"ID": "20318293", "ID_sec": "20318293"`.
-- A delivery address and a separate parking or route point: the address as `ID` (entrance), the route point as `ID_sec` (parking), e.g. `"ID": "9005000000042962227", "ID_sec": "9005000000042962733"`.
+- The stop in `route` then carries it as `"ID": "<address_id>"`.
+- Only if the app uses a second identifier for the stop (e.g. a separate parking or route point next to the address), `"ID_sec"` can carry it. Leave it out by default and ask me before using it.
 - Not an ID: a parcel or shipment number, a tour or route number, the stop's position in the tour, a database row ID that changes with every tour.
 
 Fallback: start the intent in a try/catch; on `ActivityNotFoundException` start it again without the package (Google Maps as before, it ignores the extra fields). Do not add a `<queries>` element only for this.
@@ -89,8 +89,8 @@ Links (the same as for Google Maps, or the truemetrics scheme):
 
     {
       "stops": [
-        { "ID": "<entrance id>", "ID_sec": "<parking id>", "line1": "Gymnasievej 39", "line2": "2625 Vallensbæk" },
-        { "ID": "<entrance id>", "ID_sec": "<parking id>", "line1": "Østerbyvejen 33", "line2": "9940 Læsø" }
+        { "ID": "<address_id>", "line1": "Gymnasievej 39", "line2": "Planned Arrival 14:22" },
+        { "ID": "<address_id>", "line1": "Østerbyvejen 33", "line2": "Planned Arrival 14:41" }
       ],
       "next_stop": 1
     }
@@ -98,9 +98,9 @@ Links (the same as for Google Maps, or the truemetrics scheme):
 | Field | Meaning |
 | --- | --- |
 | `next_stop` | Index in `stops` of the stop to drive to, counted from 0 |
-| `ID` | The stop's entrance identifier (the `address_id` of the metadata), string or number |
-| `ID_sec` | The stop's parking identifier |
-| `line1`, `line2` | Optional: the card's two lines, street and number, postcode and city; `line2` shows only with `line1`, without `line1` the card shows the `(label)` from `q` |
+| `ID` | The stop's `address_id` of the metadata, string or number |
+| `ID_sec` | Optional, left out by default: a second identifier of the stop, if the app has one |
+| `line1`, `line2` | Optional: the card's two lines, e.g. street and number, and "Planned Arrival 14:22" or postcode and city; `line2` shows only with `line1`, without `line1` the card shows the `(label)` from `q` |
 
 Only the stop at `next_stop` is read. A `route` that cannot be read, a `next_stop` outside the list or a stop with none of these fields counts as no `route`.
 

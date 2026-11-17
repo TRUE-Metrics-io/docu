@@ -92,8 +92,7 @@ which needs no native code at all.
         destination = LatLon(stop.lat, stop.lon),
         address = stop.street,              // "Gymnasievej 39"
         addressDetail = stop.postcodeCity,  // "2625 Vallensbæk"
-        id = stop.entranceAddressId,        // as sent in the metadata
-        idSecondary = stop.parkingAddressId,
+        id = stop.addressId,                // as sent in the metadata as address_id
         routing = true,                     // 2B; leave out for 2A
     )
     ```
@@ -192,8 +191,7 @@ class StopActivity : AppCompatActivity(), TruemetricsNavigationFragment.Host {
                     destination = LatLon(stop.lat, stop.lon),
                     address = stop.street,
                     addressDetail = stop.postcodeCity,
-                    id = stop.entranceAddressId,
-                    idSecondary = stop.parkingAddressId,
+                    id = stop.addressId,
                     routing = stop.routeInApp,       // false: 2A, true: 2B
                     // The stop's details and the way out are this screen's own, around the map
                     showCard = false,
@@ -249,13 +247,15 @@ class StopActivity : AppCompatActivity(), TruemetricsNavigationFragment.Host {
 </ParamField>
 
 <ParamField path="id" type="String">
-  The **entrance** address identifier, as sent in the metadata. Brings the entrance and the building.
+  The stop's `address_id`, as sent in the metadata: typically your address identifier or route point
+  identifier. It tells the module where to guide the courier and which last meter to show. Without
+  it the map shows the destination only.
 </ParamField>
 
 <ParamField path="idSecondary" type="String">
-  The **parking** address identifier, as sent in the metadata. Brings the parking, the waypoint and
-  the walk path. If your system has one ID per address, pass it in both `id` and `idSecondary`.
-  Without both IDs the map shows the destination only.
+  Optional, usually left out. Only if your system uses a second identifier for the stop (for
+  example a separate parking or route point next to the address), and only if truemetrics asked
+  for it.
 </ParamField>
 
 <ParamField path="routing" type="Boolean" default="false">

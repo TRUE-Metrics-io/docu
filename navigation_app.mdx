@@ -43,10 +43,9 @@ try {
 fun routeJson(tour: List<Stop>, nextStop: Int): String = JSONObject()
     .put("stops", JSONArray(tour.map { stop ->
         JSONObject()
-            .put("ID", stop.entranceAddressId)       // entrance identifier
-            .put("ID_sec", stop.parkingAddressId)    // parking identifier (the same ID if you have one)
+            .put("ID", stop.addressId)               // the address_id you send in the metadata
             .put("line1", stop.street)               // "Gymnasievej 39"
-            .put("line2", stop.postcodeCity)         // "2625 Vallensbæk"
+            .put("line2", "Planned Arrival ${stop.plannedArrival}")   // "Planned Arrival 14:22"
     }))
     .put("next_stop", nextStop)
     .toString()
@@ -147,9 +146,9 @@ The whole tour (up to 200 stops) and which of its stops comes next:
 ```json
 {
   "stops": [
-    { "ID": "9005000000042962227", "ID_sec": "9005000000042962733", "line1": "Gymnasievej 39", "line2": "2625 Vallensbæk" },
-    { "ID": "20318293", "ID_sec": "20318294", "line1": "Østerbyvejen 33", "line2": "9940 Læsø" },
-    { "ID": "17181976", "ID_sec": "9005000000023100077" }
+    { "ID": "<address_id>", "line1": "Gymnasievej 39", "line2": "Planned Arrival 14:22" },
+    { "ID": "<address_id>", "line1": "Østerbyvejen 33", "line2": "Planned Arrival 14:41" },
+    { "ID": "<address_id>" }
   ],
   "next_stop": 1
 }
@@ -158,9 +157,9 @@ The whole tour (up to 200 stops) and which of its stops comes next:
 | Field | Meaning |
 | --- | --- |
 | `next_stop` | Index in `stops` of the stop to drive to, counted from 0. |
-| `ID` | The stop's **entrance** identifier, as sent in the metadata. A string or a number. |
-| `ID_sec` | The stop's **parking** identifier, as sent in the metadata. If your system has one ID per address, send it in both. |
-| `line1`, `line2` | Optional: the card's two lines, street and number, postcode and city. Each on one line, cut with "…" when longer. `line2` shows only with `line1`; without `line1` the card shows the `(label)` from `q`, if any. |
+| `ID` | The stop's `address_id`, as sent in the metadata: typically your address identifier or route point identifier. It tells the app where to guide the courier and which last meter to show. A string or a number. |
+| `ID_sec` | Optional, usually left out. Only if your system uses a second identifier for the stop (for example a separate parking or route point next to the address), and only if truemetrics asked for it. |
+| `line1`, `line2` | Optional: the card's two lines, e.g. street and number, and a second line of your choice such as the planned arrival or postcode and city. Each on one line, cut with "…" when longer. `line2` shows only with `line1`; without `line1` the card shows the `(label)` from `q`, if any. |
 
 Only the stop at `next_stop` is read; other fields are ignored. A `route` that cannot be read, a
 `next_stop` outside the list or a stop with none of these fields counts as no `route`: the app
