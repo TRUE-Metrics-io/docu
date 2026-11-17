@@ -24,11 +24,12 @@ every stop it knows:
 ## Five ways to use it
 
 You decide how the last meter reaches the courier: as data in your own map (option 1), or with the
-truemetrics last meter module, which brings the map, the routing and the best practices with it
-(option 2).
+truemetrics last meter module inside your app, which brings the map, the routing and the best
+practices with it (option 2), or with the truemetrics standalone navigation app instead of Google
+Maps or Waze (option 3).
 
 <Frame caption="Where the last meter comes from, and who draws it">
-  <img src="/images/lastmeter/options_overview.svg" alt="Diagram of the five options: 1A export to your backend, 1B REST API, 2A module without routing, 2B module with routing, 2C standalone navigation app with app switch" />
+  <img src="/images/lastmeter/options_overview.svg" alt="Diagram of the five options: 1A export to your backend, 1B REST API, 2A module without routing, 2B module with routing, 3 standalone navigation app with app switch" />
 </Frame>
 
 <CardGroup cols={2}>
@@ -48,7 +49,7 @@ truemetrics last meter module, which brings the map, the routing and the best pr
     The same module also routes: turn-by-turn to the waypoint, into the parking, arrival at the
     door. One flag, `routing = true`.
   </Card>
-  <Card title="2C · Standalone navigation app" icon="arrow-right-arrow-left" href="/navigation_app">
+  <Card title="3 · Standalone navigation app" icon="arrow-right-arrow-left" href="/navigation_app">
     The truemetrics standalone navigation app replaces Google Maps or Waze. Your courier app sends
     the stop as it does to Google Maps and gets the courier back on arrival.
   </Card>
@@ -64,7 +65,7 @@ truemetrics last meter module, which brings the map, the routing and the best pr
       <th><strong>1B</strong> own map, REST API</th>
       <th><strong>2A</strong> module, no routing</th>
       <th><strong>2B</strong> module, routing</th>
-      <th><strong>2C</strong> standalone app</th>
+      <th><strong>3</strong> standalone app</th>
     </tr>
   </thead>
   <tbody>
@@ -97,16 +98,16 @@ truemetrics last meter module, which brings the map, the routing and the best pr
       <td style={{minWidth: 0}}>Your own</td>
       <td style={{minWidth: 0}}>Your own</td>
       <td style={{minWidth: 0}}>Your own</td>
-      <td style={{minWidth: 0}}>truemetrics</td>
-      <td style={{minWidth: 0}}>truemetrics</td>
+      <td style={{minWidth: 0}}>truemetrics routing*</td>
+      <td style={{minWidth: 0}}>truemetrics routing*</td>
     </tr>
     <tr>
       <td style={{minWidth: 0}}><strong>Flexibility</strong></td>
       <td style={{minWidth: 0}}>Full</td>
       <td style={{minWidth: 0}}>Full</td>
-      <td style={{minWidth: 0}}>Your screen, our map</td>
-      <td style={{minWidth: 0}}>Your screen, our map</td>
-      <td style={{minWidth: 0}}>Your app up to the handover</td>
+      <td style={{minWidth: 0}}>Your screen, truemetrics map</td>
+      <td style={{minWidth: 0}}>Your screen, truemetrics map</td>
+      <td style={{minWidth: 0}}>None</td>
     </tr>
     <tr>
       <td style={{minWidth: 0}}><strong>Control</strong></td>
@@ -127,23 +128,26 @@ truemetrics last meter module, which brings the map, the routing and the best pr
   </tbody>
 </table>
 
+\* Optionally with your own routing server.
+
 **Integration effort**: what it takes to get the last meter in front of the courier. **Flexibility**:
 how freely you shape the look and the flow. **Control**: how much of the data and the logic lives in
 your own systems: with 1A a full copy of the data is yours and nothing is asked of truemetrics at
-delivery time; with 2B and 2C the drive itself runs in truemetrics software, as it runs in Google
+delivery time; with 2B and 3 the drive itself runs in truemetrics software, as it runs in Google
 Maps today.
 
 ### Which one fits
 
-- **You have your own map and want full control** over data and design: **1A**, if your backend
-  already distributes tours to the devices; **1B**, if the app may ask truemetrics directly.
-- **You keep your navigation** (Google Maps, HERE, your own) and want the last meter shown the
-  way couriers read it best, with little work: **2A**.
+- **You keep your navigation** (Google Maps, HERE, your own) and your own map, with full control
+  over data and design: **1A**, if your backend already distributes tours to the devices; **1B**,
+  if the app may ask truemetrics directly.
+- **You want the last meter shown the way couriers read it best, with little work**, next to the
+  navigation you have: **2A**.
 - **You want navigation inside your own app**, made for the last meter: **2B**.
-- **Your couriers drive with Google Maps or Waze today**: **2C**. The fewest changes, and the
+- **Your couriers drive with Google Maps or Waze today**: **3**. The fewest changes, and the
   courier gets routing to the parking, the walk to the entrance and the way back to your app.
 
-Options can be combined: for example 1B in a dispatcher dashboard and 2C on the courier phones.
+Options can be combined: for example 1B in a dispatcher dashboard and 3 on the courier phones.
 
 ## What every option needs
 
@@ -164,7 +168,7 @@ Options can be combined: for example 1B in a dispatcher dashboard and 2C on the 
 
 ## Best practices for the last meter
 
-What the truemetrics module (options 2A to 2C) does out of the box. With options 1A and 1B, these
+What the truemetrics module and the standalone app (options 2A, 2B and 3) do out of the box. With options 1A and 1B, these
 are the rules to follow in your own map.
 
 1. **Route to the waypoint, not to the address pin.** The routing target is the waypoint, else the

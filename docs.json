@@ -54,7 +54,12 @@
             "group": "2 · truemetrics module",
             "pages": [
               "navigation_module",
-              "navigation_module_with_agent",
+              "navigation_module_with_agent"
+            ]
+          },
+          {
+            "group": "3 · Standalone navigation app",
+            "pages": [
               "navigation_app",
               "navigation_app_with_agent"
             ]
