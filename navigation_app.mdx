@@ -166,14 +166,9 @@ drives to `q` without a last meter.
 
 ## The switch back
 
-| Your handover has | Arrival | Back button |
-| --- | --- | --- |
-| `returnUri` | After 10 s the app opens your deep link | "Back to scanner app", opens your deep link |
-| `returnApp` | After 10 s the app brings your app to the front | "Back to scanner app", brings your app to the front |
-| neither | The app stays on the map, as Google Maps does | None; an ✕ ends the navigation, the courier switches on their own |
-
-Whether arrival switches back by itself is part of the configuration truemetrics keeps for your
-key (on by default); the Back button is always there with a way back.
+With `returnUri` or `returnApp`, the app switches back 10 s after arrival, and its Back button does
+the same at any time. Whether arrival switches back by itself is part of the configuration
+truemetrics keeps for your key (on by default).
 
 The system Back ends the navigation like the Back button: to `returnUri` or `returnApp`, else to the
 app that was in front before. So that your app comes back as the courier left it, its launcher
