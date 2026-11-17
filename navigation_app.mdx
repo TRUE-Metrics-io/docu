@@ -138,14 +138,6 @@ extra wins over a parameter of the same name. Extras are strings, except `lastMe
   with `routing = false` ([2A](/navigation_module)). For a courier who knows the way but not the door.
 </ParamField>
 
-<ParamField path="simulate" type="boolean" default="false">
-  Demo only: a simulated drive instead of GPS.
-</ParamField>
-
-<ParamField path="simulationStart" type="string">
-  Demo only: `"<lat>,<lng>"` where the simulated drive starts. Left out, at the device's position.
-</ParamField>
-
 ### `route`
 
 The whole tour (up to 200 stops) and which of its stops comes next:
@@ -201,19 +193,35 @@ The drive goes on with the phone locked or your app in front (a foreground servi
 "Navigation is running" notification; a tap leads back). One handover runs at a time: a new one
 replaces the one before, also for the same stop.
 
-## Test it
+## Let an AI agent do it
 
-The truemetrics test app ("Scanner (test caller)") hands over stops exactly like this. From a
-computer:
+[Integrate the app switch with an AI agent](/navigation_app_with_agent): a copy-paste prompt that
+finds your app's Google Maps call, asks you to confirm the mapping, and implements the handover.
+
+## For testing and demos
+
+Leave these fields out in production. With them the app drives the route by itself, so a stop can be
+shown at a desk or in a customer meeting without driving there.
+
+<ParamField path="simulate" type="boolean" default="false">
+  `true`: the app drives along the route by itself instead of following GPS, with arrival and the
+  switch back as in a real drive. No rerouting. Ignored with `lastMeterOnly`.
+</ParamField>
+
+<ParamField path="simulationStart" type="string">
+  Where the simulated drive starts: `"<lat>,<lng>"`. Left out, at the device's position. A few hundred
+  metres before the stop, on the road leading in, shows the approach and the last meter in a minute.
+</ParamField>
+
+A handover from a computer, as your app would send it; leave out the last line for a drive on GPS:
 
 ```bash
 adb shell am start -a android.intent.action.VIEW \
   -d "google.navigation:q=55.654436,12.361784&mode=d" \
   -n io.truemetrics.navigation/.ui.navigation.HandoverActivity \
-  --es returnApp com.example.scanner
+  --es returnApp com.example.scanner \
+  --ez simulate true --es simulationStart "55.65624,12.357918"
 ```
 
-## Let an AI agent do it
-
-[Integrate the app switch with an AI agent](/navigation_app_with_agent): a copy-paste prompt that
-finds your app's Google Maps call, asks you to confirm the mapping, and implements the handover.
+The truemetrics test app ("Scanner (test caller)") hands over stops exactly like this, with a
+switch for the simulated drive.

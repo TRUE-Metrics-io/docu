@@ -241,11 +241,6 @@ class StopActivity : AppCompatActivity(), TruemetricsNavigationFragment.Host {
   new one.
 </ParamField>
 
-<ParamField path="simulateByDefault" type="Boolean" default="false">
-  Demo only: whether a drive from the module's address search is simulated until the courier flips
-  the switch. Not used for requests from your app.
-</ParamField>
-
 ### `NavigationRequest`
 
 <ParamField path="destination" type="LatLon" required>
@@ -292,14 +287,6 @@ class StopActivity : AppCompatActivity(), TruemetricsNavigationFragment.Host {
   configuration for your key allows it. Without the card, pass `true`.
 </ParamField>
 
-<ParamField path="simulate" type="Boolean" default="false">
-  Demo only, with routing: drive along the route instead of following the device location.
-</ParamField>
-
-<ParamField path="simulationStart" type="LatLon">
-  Demo only: where a simulated drive starts. Left out, at the device location.
-</ParamField>
-
 ### Results
 
 | `NavigationResult` | When |
@@ -331,3 +318,35 @@ class StopActivity : AppCompatActivity(), TruemetricsNavigationFragment.Host {
 
 [Integrate the module with an AI agent](/navigation_module_with_agent): a copy-paste prompt that
 analyses your app, asks you to confirm each step, and implements the integration above.
+
+## For testing and demos
+
+Leave these out in production. With them a drive runs by itself, so a stop can be shown at a desk
+or in a customer meeting without driving there.
+
+<ParamField path="simulate" type="Boolean" default="false">
+  `NavigationRequest`, with `routing = true`: drive along the route by itself instead of following
+  the device location, with arrival as in a real drive. No rerouting.
+</ParamField>
+
+<ParamField path="simulationStart" type="LatLon">
+  `NavigationRequest`: where the simulated drive starts. Left out, at the device location. A few
+  hundred metres before the stop, on the road leading in, shows the approach and the last meter in
+  a minute.
+</ParamField>
+
+<ParamField path="simulateByDefault" type="Boolean" default="false">
+  `TruemetricsNavigation.init`: whether a drive from the module's own address search is simulated
+  until the courier flips the switch. Not used for requests from your app.
+</ParamField>
+
+```kotlin
+NavigationRequest(
+    destination = LatLon(55.654436, 12.361784),
+    id = "9005000000042962227",
+    idSecondary = "9005000000042962733",
+    routing = true,
+    simulate = true,
+    simulationStart = LatLon(55.65624, 12.357918),
+)
+```
