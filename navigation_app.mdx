@@ -213,7 +213,8 @@ shown at a desk or in a customer meeting without driving there.
   metres before the stop, on the road leading in, shows the approach and the last meter in a minute.
 </ParamField>
 
-A handover from a computer, as your app would send it; leave out the last line for a drive on GPS:
+A simulated handover from a computer, as your app would send it (without the `simulate` and
+`simulationStart` options it drives on GPS):
 
 ```bash
 adb shell am start -a android.intent.action.VIEW \
