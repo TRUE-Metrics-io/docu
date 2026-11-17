@@ -108,8 +108,8 @@ truemetrics.navigation://navigate?q=<lat>,<lng>
 rejected (no geocoding).
 
 Every field below except `q` can be an intent extra or a query parameter of the link (URL-encoded); an
-extra wins over a parameter of the same name. Extras are strings, except `routing` and
-`simulate` (boolean, or the string `"true"`/`"false"`).
+extra wins over a parameter of the same name. Extras are strings, except `simulate`
+(boolean, or the string `"true"`/`"false"`).
 
 <ParamField path="q" type="string" required>
   The stop: `<lat>,<lng>` in WGS84 degrees, as for Google Maps. Used for routing and the map when
@@ -131,13 +131,6 @@ extra wins over a parameter of the same name. Extras are strings, except `routin
   A browsable deep link of your app, opened to switch back instead of `returnApp`, for example to
   land on the stop's delivery screen: `scanner://stop/2`. `file:`, `content:`, `intent:` and `android-app:` links are
   ignored.
-</ParamField>
-
-<ParamField path="routing" type="boolean" default="true">
-  `false`: no drive, the app shows only the stop's last meter and the courier's position, as the
-  module does with `routing = false` ([option 2](/navigation_module)). For a courier who knows the way but
-  not the door. Left out, the app drives there, as Google Maps does (the module's default is the
-  other way round).
 </ParamField>
 
 ### `route`
@@ -203,7 +196,7 @@ shown at a desk or in a customer meeting without driving there.
 
 <ParamField path="simulate" type="boolean" default="false">
   `true`: the app drives along the route by itself instead of following GPS, with arrival and the
-  switch back as in a real drive. No rerouting. Ignored with `routing=false`.
+  switch back as in a real drive. No rerouting.
 </ParamField>
 
 <ParamField path="simulationStart" type="string">
