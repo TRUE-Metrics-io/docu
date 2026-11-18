@@ -80,18 +80,28 @@ which needs no native code at all.
     ```
   </Step>
 
-  <Step title="3. Describe the stop">
-    One `NavigationRequest` per stop. Only `destination` is required; the IDs bring the last meter.
+  <Step title="3. Describe the tour and the stop">
+    One `NavigationRequest` each time a stop is opened: the whole tour and which of its stops comes
+    next, the same as the standalone app's [handover](/navigation_app). Only `destination` is
+    required; a stop's `id` brings its last meter.
 
     ```kotlin
     val request = NavigationRequest(
-        destination = LatLon(stop.lat, stop.lon),
-        address = stop.street,              // "Gymnasievej 39"
-        addressDetail = "Planned Arrival ${stop.plannedArrival}",  // "Planned Arrival 14:22"
-        id = stop.addressId,                // as sent in the metadata as address_id
-        routing = true,                     // point-to-point navigation on; leave out for off
+        destination = LatLon(stop.lat, stop.lon),   // of the stop at nextStop
+        stops = tour.map {
+            NavigationStop(
+                id = it.addressId,                  // as sent in the metadata as address_id
+                line1 = it.street,                  // "Gymnasievej 39"
+                line2 = "Planned Arrival ${it.plannedArrival}",  // "Planned Arrival 14:22"
+            )
+        },
+        nextStop = tour.indexOf(stop),              // counted from 0
+        routing = true,                             // point-to-point navigation on; leave out for off
     )
     ```
+
+    Only the stop at `nextStop` is used for now; send the whole tour from the start, so nothing
+    changes on your side when the others are.
   </Step>
 
   <Step title="4. Show it">
@@ -181,13 +191,14 @@ class StopActivity : AppCompatActivity(), TruemetricsNavigationFragment.Host {
 
         // Android restores the fragment itself after a configuration change or process death
         if (savedInstanceState == null) {
-            val stop = intent.getParcelableExtra<Stop>("stop")!!
+            val tour = intent.getParcelableArrayListExtra<Stop>("tour")!!
+            val next = intent.getIntExtra("next", 0)
+            val stop = tour[next]
             show(
                 NavigationRequest(
                     destination = LatLon(stop.lat, stop.lon),
-                    address = stop.street,
-                    addressDetail = "Planned Arrival ${stop.plannedArrival}",
-                    id = stop.addressId,
+                    stops = tour.map { NavigationStop(it.addressId, it.street, "Planned Arrival ${it.plannedArrival}") },
+                    nextStop = next,
                     routing = stop.routeInApp,       // point-to-point navigation off or on
                     // The stop's details and the way out are this screen's own, around the map
                     showCard = false,
@@ -242,30 +253,19 @@ class StopActivity : AppCompatActivity(), TruemetricsNavigationFragment.Host {
   routing and the map when there is no last meter for the stop. An invalid position throws.
 </ParamField>
 
-<ParamField path="id" type="String">
-  The stop's `address_id`, as sent in the metadata: typically your address identifier or route point
-  identifier. It tells the module where to guide the courier and which last meter to show. Without
-  it the map shows the destination only.
+<ParamField path="stops" type="List<NavigationStop>" default="empty">
+  The whole tour, each stop at its place (up to 200 stops). Only the stop at `nextStop` is used for
+  now: its `id` gives the last meter, its lines the card. Without stops the map shows the
+  destination only.
 </ParamField>
 
-<ParamField path="idSecondary" type="String">
-  Optional, usually left out. Only if your system uses a second identifier for the stop (for
-  example a separate parking or route point next to the address), and only if truemetrics asked
-  for it.
+<ParamField path="nextStop" type="Int" default="0">
+  Index in `stops` of the stop at `destination`, counted from 0. An index outside `stops` throws.
 </ParamField>
 
 <ParamField path="routing" type="Boolean" default="false">
   Point-to-point navigation. `false`: the last meter and the courier's position, no route. `true`: route to the
   waypoint (else the parking, else the destination), turn-by-turn guidance, rerouting, arrival.
-</ParamField>
-
-<ParamField path="address" type="String">
-  The card's first line: street and number, or a place name. One line, a longer one is cut with "…".
-</ParamField>
-
-<ParamField path="addressDetail" type="String">
-  The card's second line, shown only with `address`: a line of your choice, for example
-  "Planned Arrival 14:22", or postcode and city. One line, a longer one is cut with "…".
 </ParamField>
 
 <ParamField path="showCard" type="Boolean" default="true">
@@ -282,6 +282,31 @@ class StopActivity : AppCompatActivity(), TruemetricsNavigationFragment.Host {
   Whether the navigation ends by itself a few seconds after arrival (`NavigationResult.Arrived`), or
   stays on the map until the courier leaves. Left out: it ends when there is a Back button and the
   configuration for your key allows it. Without the card, pass `true`.
+</ParamField>
+
+### `NavigationStop`
+
+One stop of the tour. Every field is optional.
+
+<ParamField path="id" type="String">
+  The stop's `address_id`, as sent in the metadata: typically your address identifier or route point
+  identifier. It tells the module where to guide the courier and which last meter to show. Without
+  it the map shows the destination only.
+</ParamField>
+
+<ParamField path="line1" type="String">
+  The card's first line: street and number, or a place name. One line, a longer one is cut with "…".
+</ParamField>
+
+<ParamField path="line2" type="String">
+  The card's second line, shown only with `line1`: a line of your choice, for example
+  "Planned Arrival 14:22", or postcode and city. One line, a longer one is cut with "…".
+</ParamField>
+
+<ParamField path="idSecondary" type="String">
+  Optional, usually left out. Only if your system uses a second identifier for the stop (for
+  example a separate parking or route point next to the address), and only if truemetrics asked
+  for it.
 </ParamField>
 
 ### Results
@@ -340,8 +365,7 @@ or in a customer meeting without driving there.
 ```kotlin
 NavigationRequest(
     destination = LatLon(55.654436, 12.361784),
-    id = "9005000000042962227",
-    idSecondary = "9005000000042962733",
+    stops = listOf(NavigationStop(id = "9005000000042962227", idSecondary = "9005000000042962733")),
     routing = true,
     simulate = true,
     simulationStart = LatLon(55.65624, 12.357918),
