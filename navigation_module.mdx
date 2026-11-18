@@ -197,7 +197,9 @@ class StopActivity : AppCompatActivity(), TruemetricsNavigationFragment.Host {
             show(
                 NavigationRequest(
                     destination = LatLon(stop.lat, stop.lon),
-                    stops = tour.map { NavigationStop(it.addressId, it.street, "Planned Arrival ${it.plannedArrival}") },
+                    stops = tour.map {
+                        NavigationStop(id = it.addressId, line1 = it.street, line2 = "Planned Arrival ${it.plannedArrival}")
+                    },
                     nextStop = next,
                     routing = stop.routeInApp,       // point-to-point navigation off or on
                     // The stop's details and the way out are this screen's own, around the map
@@ -294,6 +296,12 @@ One stop of the tour. Every field is optional.
   it the map shows the destination only.
 </ParamField>
 
+<ParamField path="idSecondary" type="String">
+  Optional, usually left out. Only if your system uses a second identifier for the stop (for
+  example a separate parking or route point next to the address), and only if truemetrics asked
+  for it.
+</ParamField>
+
 <ParamField path="line1" type="String">
   The card's first line: street and number, or a place name. One line, a longer one is cut with "…".
 </ParamField>
@@ -301,12 +309,6 @@ One stop of the tour. Every field is optional.
 <ParamField path="line2" type="String">
   The card's second line, shown only with `line1`: a line of your choice, for example
   "Planned Arrival 14:22", or postcode and city. One line, a longer one is cut with "…".
-</ParamField>
-
-<ParamField path="idSecondary" type="String">
-  Optional, usually left out. Only if your system uses a second identifier for the stop (for
-  example a separate parking or route point next to the address), and only if truemetrics asked
-  for it.
 </ParamField>
 
 ### Results

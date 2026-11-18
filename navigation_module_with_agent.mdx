@@ -78,9 +78,9 @@ One request each time a stop is opened: the whole tour (up to 200 stops) and whi
 | `NavigationStop` field | Content |
 | --- | --- |
 | `id` | The stop's `address_id`, exactly as sent to truemetrics in the SDK metadata. |
+| `idSecondary` | Leave it out by default. Only if the app uses a second identifier for the stop (e.g. a separate parking or route point) and I confirm it. |
 | `line1` | Street and house number, one line. |
 | `line2` | A second line, e.g. "Planned Arrival 14:22" if the app has a planned time, else postcode and city; ask me. |
-| `idSecondary` | Leave it out by default. Only if the app uses a second identifier for the stop (e.g. a separate parking or route point) and I confirm it. |
 
 IMPORTANT, the IDs: they tell the module where to guide the courier and which last meter to show (parking, entrance, walk path). They are typically the app's address identifier or route point identifier, the same value the app sends as `address_id` in the truemetrics SDK metadata. Look them up in the metadata code; do not guess. Without them the module shows only the destination.
 
@@ -135,7 +135,7 @@ Package `io.truemetrics.navigation`.
 | --- | --- |
 | Init | `TruemetricsNavigation.init(context, apiKey)` (optional third parameter `simulateByDefault`, demo only) |
 | Request | `NavigationRequest(destination: LatLon, stops: List<NavigationStop> = emptyList(), nextStop: Int = 0, backLabel: String? = "Back", simulate: Boolean = false, simulationStart: LatLon? = null, routing: Boolean = false, showCard: Boolean = true, endOnArrival: Boolean? = null)`; invalid coordinates and a `nextStop` outside `stops` throw `IllegalArgumentException` |
-| Stop | `NavigationStop(id: String? = null, line1: String? = null, line2: String? = null, idSecondary: String? = null)` |
+| Stop | `NavigationStop(id: String? = null, idSecondary: String? = null, line1: String? = null, line2: String? = null)` |
 | Position | `LatLon(lat: Double, lon: Double)`, WGS84 degrees |
 | Fragment | `TruemetricsNavigationFragment.newInstance(request)`, `TruemetricsNavigationFragment.arguments(request)` (for creation by class) |
 | End, as host | `TruemetricsNavigationFragment.Host { fun onNavigationFinished(result: NavigationResult) }` on the activity or parent fragment |
