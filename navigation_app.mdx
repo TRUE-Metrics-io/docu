@@ -219,11 +219,11 @@ A simulated handover from a computer, as your app would send it, with your app's
 `returnApp` (without the `simulate` and `simulationStart` options it drives on GPS):
 
 ```bash
-adb shell am start -a android.intent.action.VIEW \
+adb shell 'am start -a android.intent.action.VIEW \
   -d "google.navigation:q=55.654436,12.361784&mode=d" \
   -n io.truemetrics.navigation/.ui.navigation.HandoverActivity \
   --es returnApp com.example.scanner \
-  --ez simulate true --es simulationStart "55.65624,12.357918"
+  --ez simulate true --es simulationStart "55.65624,12.357918"'
 ```
 
 The truemetrics test app ("Scanner (test caller)") hands over stops exactly like this, with a
