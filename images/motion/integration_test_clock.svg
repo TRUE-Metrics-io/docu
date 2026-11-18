@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 380" width="1000" height="380" font-family="Inter, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif">
+  <title>Integration test timeline: record 30 minutes with test metadata at about minutes 1, 15 and 29, stop, the script waits 20 minutes for the uploads, then checks every 5 minutes until it passes, at most 45 minutes after the stop</title>
+  <defs>
+    <clipPath id="reveal">
+      <rect x="0" y="0" width="1000" height="380">
+        <animate attributeName="width" values="130;880;1000;1000" keyTimes="0;0.8;0.81;1" dur="14s" repeatCount="indefinite"/>
+      </rect>
+    </clipPath>
+  </defs>
+
+  <rect width="1000" height="380" rx="14" fill="#FAFAF8"/>
+  <text x="40" y="40" font-size="15" font-weight="700" fill="#303334">Test recording and check, in minutes</text>
+  <text x="40" y="62" font-size="12" fill="#757575">Keep the app logged in and the device online until the check passes</text>
+
+  <g font-size="12" font-weight="600" fill="#303334">
+    <text x="40" y="124">Recording</text>
+    <text x="40" y="184">Metadata</text>
+    <text x="40" y="244">Script</text>
+  </g>
+
+  <g clip-path="url(#reveal)">
+    <!-- Recording 0-30 min -->
+    <rect x="130" y="110" width="300" height="22" rx="11" fill="#0097a7"/>
+    <text x="280" y="125" text-anchor="middle" font-size="11" font-weight="600" fill="#FFFFFF">30 min, ideally moving</text>
+    <path d="M430,96 V270" stroke="#9E9E9E" stroke-width="1.5" stroke-dasharray="3 4"/>
+    <text x="436" y="96" font-size="11" fill="#616161">stop, start the script</text>
+
+    <!-- Test metadata at about 1, 15, 29 min -->
+    <g font-size="10.5" fill="#303334" text-anchor="middle">
+      <circle cx="140" cy="176" r="7" fill="#E63946"/><text x="140" y="200">test_index 1</text>
+      <circle cx="280" cy="176" r="7" fill="#E63946"/><text x="280" y="200">2</text>
+      <circle cx="420" cy="176" r="7" fill="#E63946"/><text x="420" y="200">3</text>
+    </g>
+
+    <!-- Script: wait 20 min, then a check every 5 min -->
+    <rect x="430" y="230" width="200" height="22" rx="11" fill="#ECEAE4"/>
+    <text x="530" y="245" text-anchor="middle" font-size="11" fill="#616161">waits 20 min for the uploads</text>
+    <g font-size="10.5" text-anchor="middle" fill="#757575">
+      <circle cx="630" cy="241" r="9" fill="#FFFFFF" stroke="#BDBDBD" stroke-width="2"/><text x="630" y="270">1</text>
+      <circle cx="680" cy="241" r="9" fill="#FFFFFF" stroke="#BDBDBD" stroke-width="2"/><text x="680" y="270">2</text>
+      <circle cx="730" cy="241" r="9" fill="#FFFFFF" stroke="#BDBDBD" stroke-width="2"/><text x="730" y="270">3</text>
+      <circle cx="780" cy="241" r="9" fill="#FFFFFF" stroke="#BDBDBD" stroke-width="2"/><text x="780" y="270">4</text>
+      <circle cx="830" cy="241" r="9" fill="#FFFFFF" stroke="#BDBDBD" stroke-width="2"/><text x="830" y="270">5</text>
+      <circle cx="880" cy="241" r="9" fill="#FFFFFF" stroke="#BDBDBD" stroke-width="2"/><text x="880" y="270">6</text>
+    </g>
+    <text x="755" y="222" text-anchor="middle" font-size="11" fill="#616161">checks every 5 min</text>
+    <!-- Example run: check 1 not complete yet, check 2 passes -->
+    <circle cx="630" cy="241" r="9" fill="#BDBDBD"/>
+    <circle cx="680" cy="241" r="9" fill="#2E7D32"/>
+    <g>
+      <rect x="640" y="284" width="80" height="24" rx="12" fill="#2E7D32"/>
+      <text x="680" y="300" text-anchor="middle" font-size="11.5" font-weight="700" fill="#FFFFFF">PASSED</text>
+      <text x="730" y="300" font-size="10.5" fill="#757575">example: at the 2nd check</text>
+    </g>
+  </g>
+
+  <!-- Clock cursor; hidden in the still frame -->
+  <g opacity="0">
+    <path d="M0,100 V312" stroke="#303334" stroke-width="1.5"/>
+    <animateTransform attributeName="transform" type="translate" values="130,0;880,0;880,0" keyTimes="0;0.8;1" dur="14s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="1;1;0;0" keyTimes="0;0.8;0.81;1" dur="14s" repeatCount="indefinite"/>
+  </g>
+
+  <!-- Minute axis: 10 px per minute, 0 min at x=130 -->
+  <g font-size="11" fill="#757575" text-anchor="middle">
+    <path d="M130,330 H880" stroke="#BDBDBD"/>
+    <g stroke="#BDBDBD">
+      <path d="M130,326 V334"/><path d="M280,326 V334"/><path d="M430,326 V334"/>
+      <path d="M580,326 V334"/><path d="M730,326 V334"/><path d="M880,326 V334"/>
+    </g>
+    <text x="130" y="350">0</text>
+    <text x="280" y="350">15</text>
+    <text x="430" y="350">30</text>
+    <text x="580" y="350">45</text>
+    <text x="730" y="350">60</text>
+    <text x="880" y="350">75 min</text>
+  </g>
+</svg>

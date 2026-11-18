@@ -1,0 +1,120 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 410" width="1000" height="410" font-family="Inter, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif">
+  <title>Three daily position folders are applied to your table oldest first: the first adds two entrances, the second moves one entrance and adds a parking place, the third deletes an entrance with a 0, 0 row; a day without changes has no folder</title>
+
+  <rect width="1000" height="410" rx="14" fill="#FAFAF8"/>
+
+  <text x="30" y="36" font-size="15" font-weight="700" fill="#303334">Each folder holds changes: apply them oldest first</text>
+  <text x="30" y="56" font-size="12" fill="#757575"><tspan font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" fill="#00636E">truemetrics-positions/incremental/</tspan>, one folder per export, named after its UTC time</text>
+
+  <!-- Folders -->
+  <g font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace">
+    <g>
+      <rect x="30" y="76" width="370" height="80" rx="6" fill="#FFFFFF" stroke="#E0E0E0"/>
+      <circle cx="52" cy="98" r="11" fill="#0097a7"/>
+      <text x="52" y="102" text-anchor="middle" font-size="11" font-weight="700" fill="#FFFFFF" font-family="Inter, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif">1</text>
+      <text x="72" y="102" font-size="12" font-weight="700" fill="#00636E">2026-11-03-00-12-31/</text>
+      <text x="72" y="124" font-size="11" fill="#303334">A<tspan x="96">entrance</tspan><tspan x="170">52.52010, 13.40490</tspan></text>
+      <text x="72" y="142" font-size="11" fill="#303334">B<tspan x="96">entrance</tspan><tspan x="170">52.53100, 13.39110</tspan></text>
+    </g>
+    <g>
+      <rect x="30" y="168" width="370" height="80" rx="6" fill="#FFFFFF" stroke="#E0E0E0"/>
+      <circle cx="52" cy="190" r="11" fill="#0097a7"/>
+      <text x="52" y="194" text-anchor="middle" font-size="11" font-weight="700" fill="#FFFFFF" font-family="Inter, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif">2</text>
+      <text x="72" y="194" font-size="12" font-weight="700" fill="#00636E">2026-11-04-00-12-26/</text>
+      <text x="72" y="216" font-size="11" fill="#303334">A<tspan x="96">entrance</tspan><tspan x="170">52.52016, 13.40502</tspan></text>
+      <text x="72" y="234" font-size="11" fill="#303334">A<tspan x="96">parking</tspan><tspan x="170">52.51980, 13.40470</tspan></text>
+    </g>
+    <g>
+      <rect x="30" y="260" width="370" height="80" rx="6" fill="#FFFFFF" stroke="#E0E0E0"/>
+      <circle cx="52" cy="282" r="11" fill="#0097a7"/>
+      <text x="52" y="286" text-anchor="middle" font-size="11" font-weight="700" fill="#FFFFFF" font-family="Inter, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif">3</text>
+      <text x="72" y="286" font-size="12" font-weight="700" fill="#00636E">2026-11-05-00-12-51/</text>
+      <text x="72" y="308" font-size="11" fill="#303334">B<tspan x="96">entrance</tspan><tspan x="170"><tspan fill="#C0583F" font-weight="700">0, 0</tspan></tspan></text>
+    </g>
+  </g>
+
+  <!-- A day without changes -->
+  <g>
+    <animate attributeName="opacity" values="0.5;0.5;1;1;0.5" keyTimes="0;0.78;0.8;0.92;1" dur="14s" repeatCount="indefinite"/>
+    <rect x="30" y="352" width="370" height="36" rx="6" fill="none" stroke="#BDBDBD" stroke-dasharray="5 4"/>
+    <text x="52" y="375" font-size="11.5" fill="#757575"><tspan font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace">2026-11-06</tspan>: nothing changed, so no folder</text>
+  </g>
+
+  <!-- Active folder -->
+  <rect x="26" y="72" width="378" height="88" rx="8" fill="none" stroke="#0097a7" stroke-width="3" opacity="0">
+    <animate attributeName="y" values="72;164;256" keyTimes="0;0.3;0.55" calcMode="discrete" dur="14s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.04;0.06;0.76;0.8;1" dur="14s" repeatCount="indefinite"/>
+  </rect>
+
+  <!-- Flow -->
+  <text x="480" y="196" text-anchor="middle" font-size="11" fill="#757575">applied in order</text>
+  <path d="M412,208 H540" stroke="#757575" stroke-width="2"/>
+  <path d="M532,202 L542,208 L532,214 Z" fill="#757575"/>
+  <circle cx="402" cy="116" r="6" fill="#F0A04B" opacity="0">
+    <animate attributeName="cx" values="402;402;548;548;402;548;548;402;548;548" keyTimes="0;0.08;0.16;0.32;0.33;0.41;0.57;0.58;0.66;1" dur="14s" repeatCount="indefinite"/>
+    <animate attributeName="cy" values="116;116;208;208;208;208;208;300;208;208" keyTimes="0;0.08;0.16;0.32;0.33;0.41;0.57;0.58;0.66;1" dur="14s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0;1;0;1;0;1;0" keyTimes="0;0.08;0.16;0.33;0.41;0.58;0.66" calcMode="discrete" dur="14s" repeatCount="indefinite"/>
+  </circle>
+
+  <!-- Your table -->
+  <rect x="560" y="76" width="410" height="270" rx="6" fill="#FFFFFF" stroke="#E0E0E0"/>
+  <text x="578" y="100" font-size="13" font-weight="700" fill="#303334">Your table</text>
+  <g font-size="11" fill="#757575">
+    <text x="578" y="126">Address</text>
+    <text x="640" y="126">Type</text>
+    <text x="730" y="126">Latitude, longitude</text>
+  </g>
+  <path d="M570,134 H960" stroke="#EEEEEE"/>
+
+  <g font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="11.5" fill="#303334">
+    <!-- A entrance: added, then moved -->
+    <g>
+      <animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.16;0.18;0.92;0.97;1" dur="14s" repeatCount="indefinite"/>
+      <rect x="566" y="144" width="398" height="24" rx="4" fill="#B2EBF2" opacity="0">
+        <animate attributeName="opacity" values="0;0;1;0;0" keyTimes="0;0.41;0.42;0.52;1" dur="14s" repeatCount="indefinite"/>
+      </rect>
+      <text x="578" y="160">A</text>
+      <text x="640" y="160">entrance</text>
+      <text x="730" y="160" opacity="0">52.52010, 13.40490
+        <animate attributeName="opacity" values="1;1;0;0" keyTimes="0;0.41;0.42;1" dur="14s" repeatCount="indefinite"/>
+      </text>
+      <text x="730" y="160">52.52016, 13.40502
+        <animate attributeName="opacity" values="0;0;1;1" keyTimes="0;0.41;0.42;1" dur="14s" repeatCount="indefinite"/>
+      </text>
+      <text x="900" y="160" font-size="10.5" font-weight="700" fill="#0097a7" font-family="Inter, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif">updated
+        <animate attributeName="opacity" values="0;0;1;1" keyTimes="0;0.41;0.43;1" dur="14s" repeatCount="indefinite"/>
+      </text>
+    </g>
+
+    <!-- B entrance: added, then deleted -->
+    <g>
+      <animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.16;0.18;0.92;0.97;1" dur="14s" repeatCount="indefinite"/>
+      <rect x="566" y="176" width="398" height="24" rx="4" fill="#F7D3CB" opacity="0">
+        <animate attributeName="opacity" values="0;0;1;0;0" keyTimes="0;0.66;0.67;0.77;1" dur="14s" repeatCount="indefinite"/>
+      </rect>
+      <g opacity="0.4">
+        <animate attributeName="opacity" values="1;1;0.4;0.4" keyTimes="0;0.66;0.7;1" dur="14s" repeatCount="indefinite"/>
+        <text x="578" y="192">B</text>
+        <text x="640" y="192">entrance</text>
+        <text x="730" y="192">52.53100, 13.39110</text>
+      </g>
+      <path d="M572,188 H860" stroke="#C0583F" stroke-width="2">
+        <animate attributeName="opacity" values="0;0;1;1" keyTimes="0;0.66;0.67;1" dur="14s" repeatCount="indefinite"/>
+      </path>
+      <text x="900" y="192" font-size="10.5" font-weight="700" fill="#C0583F" font-family="Inter, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif">deleted
+        <animate attributeName="opacity" values="0;0;1;1" keyTimes="0;0.66;0.67;1" dur="14s" repeatCount="indefinite"/>
+      </text>
+    </g>
+
+    <!-- A parking: added -->
+    <g>
+      <animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.41;0.43;0.92;0.97;1" dur="14s" repeatCount="indefinite"/>
+      <text x="578" y="224">A</text>
+      <text x="640" y="224">parking</text>
+      <text x="730" y="224">52.51980, 13.40470</text>
+    </g>
+  </g>
+
+  <text x="578" y="318" font-size="11" fill="#757575">A row with <tspan font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" fill="#C0583F">0, 0</tspan> deletes the record with the same identifier.</text>
+  <text x="578" y="334" font-size="11" fill="#757575">Any other row inserts or updates it.</text>
+</svg>

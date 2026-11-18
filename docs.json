@@ -1,7 +1,7 @@
 {
   "$schema": "https://mintlify.com/docs.json",
   "theme": "mint",
-  "name": "Starter Kit",
+  "name": "truemetrics Docs",
   "colors": {
     "primary": "#0097a7",
     "light": "#89effa",
@@ -11,9 +11,12 @@
   "navigation": {
     "groups": [
       {
-        "group": "Getting Started",
+        "group": "Getting started",
         "pages": [
-          "introduction"
+          "introduction",
+          "quickstart",
+          "api_keys",
+          "glossary"
         ]
       },
       {
@@ -99,5 +102,43 @@
       "github": "https://github.com/orgs/TRUE-Metrics-io/",
       "linkedin": "https://www.linkedin.com/company/truemetricsio"
     }
-  }
+  },
+  "redirects": [
+    {
+      "source": "/functions",
+      "destination": "/android_native"
+    },
+    {
+      "source": "/integrations",
+      "destination": "/quickstart"
+    },
+    {
+      "source": "/introduction_data",
+      "destination": "/Introduction_to_data_export"
+    },
+    {
+      "source": "/visualisations",
+      "destination": "/Introduction_to_lastmeter_visualisation"
+    },
+    {
+      "source": "/restAPI",
+      "destination": "/introduction"
+    },
+    {
+      "source": "/entrances",
+      "destination": "/introduction"
+    },
+    {
+      "source": "/development",
+      "destination": "/introduction"
+    },
+    {
+      "source": "/api-reference/:slug*",
+      "destination": "/introduction"
+    },
+    {
+      "source": "/essentials/:slug*",
+      "destination": "/introduction"
+    }
+  ]
 }

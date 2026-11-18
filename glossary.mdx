@@ -1,0 +1,65 @@
+---
+title: 'Glossary'
+description: 'One definition for each term used across these pages.'
+---
+
+**Address ID.** Your identifier of a delivery address, sent as `address_id` in each delivery's
+[metadata](/metadata). truemetrics merges everything it learns at one address under this ID and
+returns results by it: the last meter API takes it as `identifier_entrance` / `identifier_parking`,
+and the [export](/Introduction_to_data_export) uses it as its key. If your system identifies
+addresses differently, agree the key with truemetrics before the first route.
+
+**Building.** The building polygon the entrance belongs to, from map data.
+
+**Delivery attempt.** One try to hand over one delivery, successful or not. Each attempt produces
+exactly one metadata event.
+
+**Depot.** Where a route starts and parcels are loaded, sent as `depot_id`.
+
+**Device ID.** The SDK's identifier of an installation, used to find a device's data and test
+results. It can rotate (by default after 30 days), so log it with each session. See
+[Android Native](/android_native).
+
+**Entrance.** The door couriers really use to reach the recipient, learned from their walks.
+
+**eventType.** The kind of a metadata event: `delivery`, `pickup`, `planned_sequence` or
+`integration_test`. The outcome of a delivery is in `extra.delivery_state`, not in the event type.
+
+**H3 cell.** A hexagon of Uber's H3 grid. The export's `h3_10` column is the resolution-10 cell
+(about 15,000 m²) of a stop.
+
+**Last meter.** Everything between the street and the recipient's door: waypoint, parking, walk
+path, entrance and building. See [Last meter visualisation and routing](/lastmeter_routing_overview).
+
+**Merge.** The nightly run that combines all recorded stops at an address into one parking place and
+entrance. New data shows up in the API and the export after the next merge.
+
+**Metadata.** What your app tells the SDK about the delivery the courier is doing: address,
+event type, time, waypoint and reference coordinates, extra keys. See [Metadata](/metadata).
+
+**Parking (parking place).** Where couriers really stop their vehicle for an address, learned from
+their recordings.
+
+**Recording.** The time between `startRecording()` and `stopRecording()` in which the SDK collects
+sensor data, typically one route.
+
+**Reference point (taskpoint).** The coordinate your system has for the destination itself, usually
+the building or the address pin, sent as `referenceLatitude` / `referenceLongitude`. The last meter
+API can draw it as a "taskpoint" where enabled for your account.
+
+**Route (tour).** One courier's sequence of stops in one shift, identified by `tourId`.
+
+**Stop.** One halt of the vehicle at which the courier delivers or picks up, from parking to driving
+off. A stop can serve several deliveries. Its durations are in the
+[export](/Introduction_to_data_export).
+
+**Upload mode.** Which recorded data the SDK sends: all of it (`upload_always`), only the data
+around metadata events (`metadata_triggered`), or `upload_wifi_only`. Set per account by truemetrics.
+See [Data and Battery](/data_consumption_and_battery).
+
+**Walk path.** The way on foot from the parking place to the entrance.
+
+**Waypoint.** Where the approach to the parking place leaves the street, learned by truemetrics from
+the courier's drives. A navigation should route here, not to the address pin; the way from the
+waypoint to the parking place is driven. Your own routing point, if you have one, is what you send
+as `waypointLatitude` / `waypointLongitude` in metadata.

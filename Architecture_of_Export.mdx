@@ -1,20 +1,80 @@
 ---
 title: 'Export setup'
+description: 'Where the daily export goes: an S3 bucket you read from AWS or Google Cloud, or your SFTP server.'
 ---
 
-Our system is designed to accommodate the data transfer needs of our customers efficiently. Most customers prefer a daily batch export of all data, including position data and stops KPI data. To support this, we integrate with the most popular cloud providers- AWS, Google Cloud, and Azure - as well as provide a generic option via SFTP for on-premises or other cloud setups.
+Most customers take a daily batch export of their position data and stop KPIs. truemetrics writes
+it to an S3 bucket that you read from AWS or copy into Google Cloud, or pushes it to your SFTP
+server for on-premises or other cloud setups. No API key is needed for the export, see
+[API keys](/api_keys). What the files contain is in [Export format](/Introduction_to_data_export),
+how they are laid out in [Update and versioning](/Update_and_Versioning).
 
 ## AWS
 
-For customers using AWS as their cloud provider, the setup is straightforward. Simply configure an S3 bucket with the right permission, and we will automatically update it daily with the latest data using AWS DataSync.
+### How it works
 
-<img height="160" noZoom src="/images/aws.png" alt="AWS Integration Diagram"/>
+truemetrics writes exports to an Amazon S3 bucket named `true-shared-<your company>` in AWS region
+`eu-central-1`. The bucket is owned by truemetrics and used only for your data. Each export run
+adds new folders with the stop KPIs and the positions, see [Update and versioning](/Update_and_Versioning).
+
+You read the files with your own AWS account: directly, or with a daily copy into a bucket you own.
+No passwords or access keys are exchanged. truemetrics gives read access to the bucket to one IAM
+role in your account, and to nothing else.
+
+### Setup
+
+#### 1. Create the reading role
+
+Create an IAM role in your account for the job that will read or copy the files, for example a
+Lambda function, an ECS task or an EC2 instance.
+
+#### 2. Send us the role ARN
+
+Send the role's ARN (`arn:aws:iam::<your account ID>:role/<role name>`) to
+[info@truemetrics.io](mailto:info@truemetrics.io). It is not a secret. We allow that role to read
+the bucket and send you:
+
+- the name of the S3 bucket
+- the time of day the export finishes
+
+#### 3. Grant the role read access on your side
+
+Access across accounts has to be allowed on both sides. Attach a policy like this to the role:
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": "s3:ListBucket",
+      "Resource": "arn:aws:s3:::true-shared-<your company>"
+    },
+    {
+      "Effect": "Allow",
+      "Action": "s3:GetObject",
+      "Resource": "arn:aws:s3:::true-shared-<your company>/*"
+    }
+  ]
+}
+```
+
+#### 4. Read or copy the files daily
+
+Schedule your job after the export time we sent you. To copy new files into your own bucket:
+
+```bash
+aws s3 sync s3://true-shared-<your company>/ s3://<your bucket>/truemetrics/
+```
+
+Don't add `--delete`: we keep the files on our side for our own delivery checks and clean them up
+ourselves, and `--delete` would then remove your copies of older exports.
 
 ## Google Cloud
 
 ### How it works
 
-truemetrics writes exports to an Amazon S3 bucket in AWS region `eu-central-1`. The bucket is owned by truemetrics and used only for your data. Each export run creates a new folder with Parquet files and a `schema_*.json`.
+truemetrics writes exports to an Amazon S3 bucket in AWS region `eu-central-1`. The bucket is owned by truemetrics and used only for your data. Each export run adds a folder for the positions and one for the stops, see [Update and versioning](/Update_and_Versioning).
 
 To get the files into Google Cloud, you set up a daily copy job with **Google Storage Transfer Service** (STS). The job runs in your Google Cloud project and copies new files from our S3 bucket into a Cloud Storage bucket you own.
 
@@ -83,4 +143,13 @@ In the Cloud Console, go to **Storage Transfer Service → Create transfer job**
 
 ## SFTP
 
-For customers using other cloud providers or on-premises setups, SFTP offers a flexible solution. In this configuration, we push position data and stops KPI data to your FTP server daily. This approach ensures you always have access to the most recent data while maintaining a complete history for your reference.
+For on-premises or other cloud setups, truemetrics pushes the files to your SFTP server every day.
+Send us:
+
+- the host name and port (22 if not stated)
+- the user name, and either its password or an RSA key pair for it (we hold the private key)
+- the folder for the files, and a second folder if stop KPIs should be kept apart from positions
+
+The folders must exist before the first export; truemetrics does not create them. The files are CSV
+by default, Parquet where agreed. truemetrics keeps a copy of every file it sends. The file names are
+in [Update and versioning](/Update_and_Versioning#sftp).

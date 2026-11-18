@@ -1,64 +1,53 @@
 ---
 title: 'Quickstart'
-description: 'Start the integration in less than 5 minutes.'
+description: 'The steps from an API key to verified data, on one page.'
 ---
 
-## Setup your development
+## Requirements
 
-Learn how to integrate the truemetrics Android SDK into your app.
-The other sections of this document describe in detail how to integrate and use the SDK in your application. 
+- An Android courier app (Android 7.0, API level 24, or newer). There is no iOS SDK: see [iOS](/ios).
+- Native Kotlin/Java or Flutter. React Native and Expo: see their pages and talk to us first.
 
-## Get your SDK API key
+## 1. Get an SDK API key
 
-For using the SDK to upload data from the integrating app (e.g. your driver app), an API key is required.
-The integrating app has to set this api key (called SDK API KEY) in the initialization of the SDK (see also [here in the documentation](/functions)). 
+The SDK API key identifies your account; your app passes it to the SDK at initialization. Request
+yours at [info@truemetrics.io](mailto:info@truemetrics.io). Which other keys exist and what they are
+for is on [API keys](/api_keys).
 
-If you only want to make some first upload tests, you can use our demo SDK API KEY 
+For a first upload test you can use the demo SDK API key:
 
 `MSgcfnGu0p3E2KhFwTP3N5NSrCSXm54U6DI0PW51`
 
-### How to integrate the SDK for native apps
+## 2. Add the SDK
 
-#### Clone the demo application
+<CardGroup cols={2}>
+  <Card title="With a coding agent" icon="robot" href="/with_agent">
+    Paste the prompt into Claude Code, Cursor or a similar agent in your app's repository.
+  </Card>
+  <Card title="By hand" icon="code" href="/android_native">
+    Android Native, with the dependency, permissions, lifecycle and status handling. Flutter apps:
+    [Flutter](/flutter).
+  </Card>
+</CardGroup>
 
-To ensure a smooth integration in your app, we prepared a sample integration with a basic demonstrator just for you. You can find this repository 
-[here](https://github.com/TRUE-Metrics-io/truemetrics_android_demo_app_p). Just clone the repository
-locally, by following these
-[instructions](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository)
-in your terminal.
+A sample app is in the [native demo repository](https://github.com/TRUE-Metrics-io/truemetrics_android_demo_app_p).
 
-Just run or deploy the application in your favorite IDE.
+## 3. Decide when to record
 
-#### Prepare the SDK integration
+Initialize the SDK when the courier logs in, start recording when the route starts and stop it
+when the route ends. The lifecycle with all its cases is on [Android Native](/android_native).
 
-Integrate the SDK into your app by following these steps:
-  
-1. Read [the documentation](/functions) of the SDK interface.
-2. Think about, when your app requires to initialize the truemetrics SDK. Typically this is done when the integrating App is started.
-3. Think about, when to start and stop the SDK. This could be for example when the driver starts a new delivery or starts with his route. Or it could be just the whole shift of a driver.
+## 4. Send metadata
 
-### How to integrate the SDK for React Native apps
+One event per delivery attempt, from the place in your app where the attempt reaches its final
+state, with the address ID your results will be keyed by. Fields and examples: [Metadata](/metadata).
 
-We have also prepared a React Native demo app to show how to integrate our SDK. You can find it [here](https://github.com/TRUE-Metrics-io/truemetrics_android_demo_react_app_p). 
+## 5. Verify
 
-There is a native module called `TruemetricsSdkModule` in the `android` module of React Native demo app. `TruemetricsSdkModule` handles interaction with the SDK.
+Record 30 minutes with three test events and run the check script: [Verify your integration](/verify_integration).
 
-### How to integrate the SDK for Expo apps
+## 6. Get results
 
-You can find Expo demo app [here](https://github.com/TRUE-Metrics-io/truemetrics_android_demo_expo_app_p).  
-
-### Connect your backend
-
-The second API key (called RESULTS API KEY) is used when you want to receive the results of a delivery from [https://api.truemetrics.cloud/V2/results](https://api.truemetrics.cloud/V2/results).
-    
-If you plan to use all features and to actually receive results, request an API Key by sending us a
-[message](mailto:jan@truemetrics.io). We'll get back to you as fast as possible. 
-
-### App permissions
-SDK requires location permissions (including background location) to collect fused location data that helps our algorithms provide efficient results.
-You can refer to Android developers guidelines to integrate location permissions and user consent. 
-Additionally, SDK requires permission to post notifications in order to show Foreground service notification. Demo app showcases creating notification channels and asking for permission to post notifications.
-
-###  Software Specifications
-Android SDK can run on minimum Android 7.0 (API level 24)
-
+- [Last meter visualisation and routing](/lastmeter_routing_overview): parking place, entrance and
+  walk path per address, through the API, a module or the navigation app.
+- [Data export](/Architecture_of_Export): daily files in your own cloud storage or on SFTP.

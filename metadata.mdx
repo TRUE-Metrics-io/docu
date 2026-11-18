@@ -1,164 +1,209 @@
 ---
-title: 'Metadata'  
-description: 'Logging Metadata allows you to map truemetrics data to your existing data.'
+title: 'Metadata'
+description: 'The events your app logs with the truemetrics SDK: when to send them, every field and extra key, and the rules.'
 ---
 
-# Introduction
+Metadata links truemetrics' stops, parking places and entrances to your deliveries and addresses.
+Your app logs one event per delivery or pickup attempt with `logMetadata` (Flutter:
+`logStandardMetadata`). This page is the reference for its fields and keys; the
+[agent prompt](/with_agent) uses the same names.
 
-The truemetrics SDK supports logging of not only sensor data but also metadata from your mobile application. This allows you to enrich truemetrics data with specific courier events and data to get most of truemetrics data.
+## When to send
 
-# When to send metadata and what to use as trigger
+- **One event per delivery attempt**, whatever the outcome: successful, failed, rejected, handed to
+  a neighbor or put in a parcel locker. The outcome goes into `extra.delivery_state`.
+- Send it when the driver finalizes the attempt in the app: the final scan, the confirm button, the
+  signature or photo capture completing, or a failure reason being selected. Hook in at the single
+  place in code where the attempt reaches its final state, not in a button that can be pressed
+  several times.
+- Do not send on intermediate steps (opening the stop, starting a scan), and not again when the
+  driver edits the result.
+- A later attempt at the same address, e.g. after a failed first try, is a new attempt with its own
+  event.
+- Several parcels for the same address delivered together: one event, with all parcel IDs in
+  `extra.parcel_id`.
+- Pickups follow the same rules with `eventType` `pickup`.
 
-When is the right time to send metadata? The truemetrics algorithm matches the metadata closest in time to the stop event. Most customers choose an interaction that occurs close to the actual service, such as scanning the parcel or the courier swiping to confirm arrival at the delivery location. 
-
-Try to avoid triggers that the driver might often forget, such as marking the delivery as closed or starting navigation to the next stop, as this can lead to mismatches between the metadata and the stop data in truemetrics.
-
-If you're unsure, either discuss this with truemetrics or use multiple triggers to send metadata. Just make sure to include the type of trigger so that the data is not interpreted as multiple deliveries.
-
-| Example Key   | Example Value                  |
-| ------------- | ------------------------------ |
-| type_trigger  | job_finalized / scan_performed  |
-| ...           | ...                            |
-
-
-# How to send metadata
-
-Use the `StandardMetadata` class to log structured event metadata:
-
-```kotlin
-import io.truemetrics.truemetricssdk.metadata.StandardMetadata
-
-val sdk = TruemetricsSdk.getInstance()
-sdk.logMetadata(StandardMetadata(
-    eventTime = "2025-01-15T14:30:00",
-    eventType = "delivery_successful",
-    deliveryId = "parcel_123",
-    tourId = "tour_456",
-    waypointLatitude = "52.5200",
-    waypointLongitude = "13.4050",
-    referenceLatitude = "52.5201",
-    referenceLongitude = "13.4051",
-    address = "Pflanzstrasse 5, 10762 Berlin",
-    extra = mapOf(
-        "type_vehicle" to "car",
-        "type_consignee" to "B2C"
-    )
-))
-```
+Log at the moment of the driver's action, from the code that first saves it on the device, also
+when offline: the SDK buffers and uploads by itself. Never log from a server-sync callback.
+truemetrics places an event in the recording by the time `logMetadata` is called, and for some
+accounts the SDK uploads only the sensor data around that time
+([upload modes](/data_consumption_and_battery#upload-modes)). If logging can only happen later, put
+the time of the action in `eventTime`.
 
 <Note>
-The map-based `logMetadata(Map<String, String>)` overload is deprecated. Use `logMetadata(StandardMetadata)` instead.
+  Several events per attempt (e.g. one at the scan and one at the confirmation) only as an exception
+  agreed with truemetrics. Each event then carries `extra.type_trigger` (e.g. `scan_performed`,
+  `job_finalized`), so the events are not counted as several deliveries.
 </Note>
 
-# Standard Metadata Fields
+### When the SDK is not ready
 
-The `StandardMetadata` class contains the following fields. All fields are strings, and all are
-optional: an omitted or `null` field is uploaded as an empty string, which is what passing `""` has
-always produced. Supply the ones your event actually has.
+The SDK drops metadata logged before it is ready, e.g. right after `init()`. It is ready from the
+first `Initialized`, `RecordingInProgress`, `RecordingStopped`, `DelayedStart`,
+`TrafficLimitReached`, `ReadingsDatabaseFull` or `AskForPermissions` status after each `init()`
+(Flutter: also any `onPermissionsRequired` call) until `deinitialize()`.
 
-| Field | Serialized Key | Description |
-| --- | --- | --- |
-| `eventTime` | `t_event` | Timestamp when the event happened |
-| `eventType` | `type_event` | Name of the event, e.g. `pickup_successful`, `delivery_successful`, `delivery_to_neighbor` |
-| `deliveryId` | `id_delivery_external` | External identifier of the delivery, e.g. parcel ID |
-| `tourId` | `id_tour` | Identifier of the tour |
-| `waypointLatitude` | `lat_waypoint_external` | Latitude where the courier is routed to (normally a coordinate on the street) |
-| `waypointLongitude` | `lon_waypoint_external` | Longitude where the courier is routed to (normally a coordinate on the street) |
-| `referenceLatitude` | `lat_reference_external` | Latitude where the courier is sent (building/destination) |
-| `referenceLongitude` | `lon_reference_external` | Longitude where the courier is sent (building/destination) |
-| `address` | `address_raw` | Raw address string, if already normalised available |
-| `extra` | — | Additional key-value pairs (merged into the payload, standard fields take precedence) |
+Build each event, `eventTime` included, when the driver acts. While the SDK is not ready, or while
+older events are still waiting, append it to a queue in local storage (a file or preferences of your
+own). Once the SDK is ready, send the queue in order, then log directly. Keep the newest 100 events;
+when trimming, never drop a `planned_sequence` event. Keep the queue across logout; it is sent after
+the next `init()`.
 
+## Example
 
+<CodeGroup>
 
-# Additional Best Practices
+```kotlin Android
+import io.truemetrics.truemetricssdk.TruemetricsSdk
+import io.truemetrics.truemetricssdk.metadata.StandardMetadata
 
-## Service Type
-
-Stop times can vary significantly depending on the type of service performed. Was it a fast B2B drop-off with a single parcel, or a more complex B2C pickup requiring a signature? You know best what is important for your business, and truemetrics allows you to enrich the data with your specific categories, enabling you to later analyze the data based on those categories.
-
-Typical examples:
-
-| Example Key   | Example Value        |
-| ------------- | -------------------- |
-| type_consignee  | B2C                |
-| type_stop       | pickup (or drop-off)|
-| type_service    | E42c (internal code)|
-
-## Vehicle types
-
-Some of our customers have multiple vehicle types e.g. Trucks, cars and two-wheelers.
-
-Especially for parking places,  it's quite interesting to be able to seperate this data by the type of the vehicle. To do that, just introduce a new  key-value pair and log the vehicle type.
-
-| Example Key   | Example Value        |
-| ------------- | -------------------- |
-| type_vehicle           | car              |
-
-# Advanced Metadata Features
-
-## Metadata Templates
-
-Create reusable templates for consistent metadata structures:
-
-```kotlin
-val sdk = TruemetricsSdk.getInstance()
-
-// Create a template
-sdk.createMetadataTemplate("delivery", mapOf(
-    "type" to "delivery",
-    "version" to "1.0"
-))
-
-// Retrieve a template
-val template = sdk.getMetadataTemplate("delivery")
-
-// List all templates
-val templateNames = sdk.getMetadataTemplateNames()
-
-// Remove a template
-sdk.removeMetadataTemplate("old_template")
+TruemetricsSdk.getInstance().logMetadata(
+    StandardMetadata(
+        eventTime = "2026-01-15T14:30:00+01:00",
+        eventType = "delivery",
+        deliveryId = "D-123",
+        tourId = "T-456",
+        waypointLatitude = "52.5200",
+        waypointLongitude = "13.4050",
+        referenceLatitude = "52.5201",
+        referenceLongitude = "13.4051",
+        address = "Pflanzstrasse 5, 10762 Berlin",
+        extra = mapOf(
+            "address_id" to "A-789",
+            "task_id" to "T321",
+            "parcel_id" to "P-1,P-2",
+            "delivery_state" to "success",
+            "delivered_to_neighbor" to "false",
+            "eta_first" to "2026-01-15T14:10:00+01:00",
+            "eta_latest" to "2026-01-15T14:25:00+01:00",
+            "depot_id" to "BER-1",
+            "vehicle_type" to "van",
+        ),
+    )
+)
 ```
 
-## Tagged Metadata
-
-Build metadata incrementally using tags:
-
-```kotlin
-val sdk = TruemetricsSdk.getInstance()
-
-// Create tagged metadata from a template
-sdk.createMetadataFromTemplate("current_delivery", "delivery")
-
-// Add data incrementally
-sdk.appendToMetadataTag("current_delivery", "orderId", "123")
-sdk.appendToMetadataTag("current_delivery", mapOf(
-    "lat" to "52.5",
-    "lon" to "13.4"
-))
-
-// Log when ready
-sdk.logMetadataByTag("current_delivery")
-
-// Clean up
-sdk.removeMetadataTag("current_delivery")
+```dart Flutter
+await sdk.logStandardMetadata(StandardMetadata(
+  eventTime: '2026-01-15T14:30:00+01:00',
+  eventType: 'delivery',
+  deliveryId: 'D-123',
+  tourId: 'T-456',
+  waypointLatitude: '52.5200', waypointLongitude: '13.4050',
+  referenceLatitude: '52.5201', referenceLongitude: '13.4051',
+  address: 'Pflanzstrasse 5, 10762 Berlin',
+  extra: {
+    'address_id': 'A-789',
+    'task_id': 'T321',
+    'parcel_id': 'P-1,P-2',
+    'delivery_state': 'success',
+    'delivered_to_neighbor': 'false',
+    'eta_first': '2026-01-15T14:10:00+01:00',
+    'eta_latest': '2026-01-15T14:25:00+01:00',
+    'depot_id': 'BER-1',
+    'vehicle_type': 'van',
+  },
+));
 ```
 
-### Tagged Metadata API Reference
+</CodeGroup>
 
-| Method | Return Type | Description |
+The Java form is on [Android Native](/android_native#metadata). The map-based
+`logMetadata(Map<String, String>)` is deprecated.
+
+## Standard fields
+
+All values are strings. On Android every field is optional in code (SDK 1.6.0 and newer): an omitted
+field is uploaded as an empty string. In Flutter all nine are required: pass `''` for unknown ones.
+
+| Field (wire key) | Level | Content |
 | --- | --- | --- |
-| `createMetadataTemplate(name, data)` | `Unit` | Create reusable template |
-| `getMetadataTemplate(name)` | `Map<String, String>?` | Get template by name |
-| `getMetadataTemplateNames()` | `Set<String>` | List all templates |
-| `removeMetadataTemplate(name)` | `Boolean` | Remove template |
-| `createMetadataFromTemplate(tag, template)` | `Boolean` | Create tag from template |
-| `appendToMetadataTag(tag, data)` | `Unit` | Append map to tagged metadata |
-| `appendToMetadataTag(tag, key, value)` | `Unit` | Append single key-value to tag |
-| `getMetadataByTag(tag)` | `Map<String, String>?` | Get tagged metadata |
-| `getMetadataTags()` | `Set<String>` | Get all active tags |
-| `logMetadataByTag(tag)` | `Boolean` | Log tagged metadata |
-| `removeMetadataTag(tag)` | `Boolean` | Remove tag |
-| `removeFromMetadataTag(tag, key)` | `Boolean` | Remove key from tag |
-| `clearAllMetadata()` | `Unit` | Clear all templates and tags |
+| `eventTime` (`t_event`) | Required | When the driver acted, ISO 8601 with a UTC offset or `Z`, e.g. `2026-01-15T14:30:00+01:00` or `2026-01-15T13:30:00Z`. The SDK sends the string as it is; a time without offset cannot be placed in UTC. |
+| `eventType` (`type_event`) | Required | `delivery` or `pickup`. Also `planned_sequence` ([below](#planned-sequence)) and `integration_test` ([Verify](/verify_integration)). |
+| `deliveryId` (`id_delivery_external`) | Required | Your delivery ID. |
+| `tourId` (`id_tour`) | Required | Route or tour ID. |
+| `waypointLatitude`, `waypointLongitude` (`lat_waypoint_external`, `lon_waypoint_external`) | Recommended | The [waypoint](/glossary): the street coordinate the courier is routed to, as your routing system and the courier's navigation use it. Typically a street projection from Google Maps or your own system. |
+| `referenceLatitude`, `referenceLongitude` (`lat_reference_external`, `lon_reference_external`) | Recommended | The reference: where you believe the delivery is done, i.e. the destination building. Typically a rooftop coordinate from your address system or geocoder. |
+| `address` (`address_raw`) | Recommended | The address as one string, normalized if available. |
+| `extra` | | Further keys, below. An extra key equal to one of the wire keys above is ignored. |
 
+## Extra keys
+
+| Key | Level | Content |
+| --- | --- | --- |
+| `address_id` | Required | Highest priority. Your stable identifier of the address. truemetrics returns parking places and entrances keyed by this ID. |
+| `delivery_state` | Required | `success`, `failed` or `special` (e.g. delivered to neighbor, customer not home, parcel locker), plus your raw internal code. |
+| `delivered_to_neighbor` | Required | `true` if handed to a neighbor or to any address other than the recipient's, else `false`. See [Neighbor deliveries](#neighbor-deliveries). |
+| `eta_first`, `eta_latest` | Required | The first planned ETA and the most recent updated ETA, ISO 8601. With only one ETA, send it in both. |
+| `depot_id` | Required | The depot or hub the route starts from, as your systems name it. On every event, also on `planned_sequence`. |
+| Stop identifier, e.g. `task_id`, `stop_id` or `parcel_id` | Required | The one identifier used per stop in the [planned sequence](#planned-sequence), same key name and value. |
+| `parcel_id` | Recommended | Parcel ID(s), comma-separated for several parcels. |
+| `neighbor_address`, `neighbor_address_id` | Recommended | For a neighbor delivery, if known: the street address where it was handed over (not the neighbor's name) and its ID. |
+| `service_type` | Recommended | Your raw service code as it is, e.g. signature required, age check. |
+| `street`, `house_number`, `postal_code`, `city` | Recommended | Address parts, if your app has them separately. |
+| `vehicle_type` | Optional | E.g. `car`, `van`, `bike`. Lets parking places be told apart by vehicle. |
+| `driver_id`, `driver_experience`, … | Optional | Other fields your systems use, e.g. for later analysis by category. |
+| `type_trigger` | Exception | Only where agreed with truemetrics, see [When to send](#when-to-send). |
+
+Do not send recipient names, phone numbers or free-text notes.
+
+### Neighbor deliveries
+
+Every delivery handed to a neighbor, or to any other address than the recipient's (e.g. a nearby
+shop), must be marked with `delivered_to_neighbor` `true`. The courier stopped at a different
+building than the recipient's, so truemetrics has to filter these events out; otherwise a wrong
+parking place or entrance is linked to the recipient's `address_id`. If your app only has a status
+code for this, still send the flag and keep the code in `delivery_state`.
+
+## Planned sequence
+
+Exactly once per route, when the route is actually started, log one dedicated event with the planned
+stops. It is never combined with a delivery event.
+
+- `eventType` `planned_sequence`, `eventTime` and `tourId` set, the other standard fields empty.
+- `extra.planned_sequence`: the planned stops in order, as a JSON array string, e.g.
+  `[{"seq":1,"task_id":"T321","eta":"2026-10-15T08:12:00Z"}, ...]`. Per stop only `seq`, the one
+  stop identifier and the planned `eta` (ISO 8601). The identifier uses the same key name and value
+  as in the delivery events.
+- `extra.stop_count` and `extra.depot_id`.
+
+Keep the event under 50 KB; a route of 100 to 200 stops is far below that. Metadata logged close
+together is uploaded as one piece, the upload limit is set per account and can be as low as 200 KB,
+and a piece above the limit is never uploaded. Do not split the sequence into several events.
+
+Do not send it again on re-plans, app restarts or re-logins for the same route: keep a sent flag per
+`tourId`, set in the same step that logs or queues the event.
+
+## Templates and tags
+
+The SDK can also build metadata step by step from templates and tags. The result is a plain map like
+the deprecated `logMetadata(Map)`; for delivery events use `StandardMetadata`.
+
+```kotlin
+import io.truemetrics.truemetricssdk.TruemetricsSdk
+
+val sdk = TruemetricsSdk.getInstance()
+
+sdk.createMetadataTemplate("stop", mapOf("vehicle_type" to "van"))
+sdk.createMetadataFromTemplate("current_stop", "stop")
+sdk.appendToMetadataTag("current_stop", "address_id", "A-789")
+sdk.logMetadataByTag("current_stop")
+sdk.removeMetadataTag("current_stop")
+```
+
+| Method | Returns | Description |
+| --- | --- | --- |
+| `createMetadataTemplate(name, data)` | `Unit` | Create a template |
+| `getMetadataTemplate(name)` | `Map<String, String>?` | A template by name |
+| `getMetadataTemplateNames()` | `Set<String>` | All template names |
+| `removeMetadataTemplate(name)` | `Boolean` | Remove a template |
+| `createMetadataFromTemplate(tag, template)` | `Boolean` | Create a tag from a template |
+| `appendToMetadataTag(tag, data)` | `Unit` | Add a map to a tag |
+| `appendToMetadataTag(tag, key, value)` | `Unit` | Add one key and value to a tag |
+| `getMetadataByTag(tag)` | `Map<String, String>?` | The metadata of a tag |
+| `getMetadataTags()` | `Set<String>` | All tags |
+| `logMetadataByTag(tag)` | `Boolean` | Log a tag's metadata |
+| `removeMetadataTag(tag)` | `Boolean` | Remove a tag |
+| `removeFromMetadataTag(tag, key)` | `Boolean` | Remove a key from a tag |
+| `clearAllMetadata()` | `Unit` | Remove all templates and tags |

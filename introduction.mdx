@@ -1,46 +1,52 @@
 ---
 title: 'Introduction'
-description: 'Start integration in less than 5 minutes'
+description: 'What truemetrics does, what you get, and where to start.'
 ---
 
-## Introduction
-Welcome to **truemetrics Quickstart**! This guide is designed to help you integrate truemetrics into your system quickly and seamlessly. Whether you're a first-time user or revisiting for a refresher, you'll find actionable steps and examples to simplify your integration process.
+truemetrics learns the **last meter** of your deliveries: where couriers really park, which entrance
+they really use and how they walk from one to the other. It learns this from your own couriers. The
+truemetrics SDK records sensor data in your courier app while they deliver, your app tells it which
+address each delivery was for, and truemetrics merges what it saw at each address into one parking
+place and entrance per address.
 
-This documentation serves two purposes:  
-1. A hands-on guide to integrating our technology.  
-2. A resource enriched with examples to illustrate input/output formats. These examples are intended as guidance, providing a clear path while leaving room for customization.
+## What you get
 
-## SDK-Enabled Features
-
-The **truemetrics Android SDK** enables you to collect precise positional and motion data from devices. Using this data, our technology identifies where couriers park and how they access buildings. This empowers couriers to optimize the last 50 meters of the delivery journey.
-
-Our core features fall into three categories:
-
-truemetrics Android SDK provides an easy way to collect the positional & motion data of the devices and convert them into intelligent insights to solve many challenges in the last mile delivery likes finding correct entrances and parking places but also getting deep delivery insights.
-
-<CardGroup>
-
-<Card 
-  title="Optimal Parking Positions" 
-  icon="paintbrush" 
-  href="/settings/global">
-  Provides the most time-efficient parking coordinates (e.g., latitude and longitude), along with parking heatmaps or polygons for any given address.
-</Card>
-
-<Card
-  title="Building Entrances"
-  icon="square-code"
-  href=""
->
-Delivers precise coordinates of building entrances and additional metadata, such as floor level and availability of elevators or stairs.
-</Card>
-
-<Card
-  title="Delivery Insights"
-  icon="chart-mixed"
-  href=""
->
-  Provides detailed timestamps and segment times for each part of the delivery to monitor performance of the operation and to take adaptive measures.
-</Card>
+<CardGroup cols={2}>
+  <Card title="Last meter in your map or navigation" icon="map-location-dot" href="/lastmeter_routing_overview">
+    Parking place, entrance, waypoint, walk path and building per address: through the REST API, in
+    your own map, with the truemetrics module inside your app, or in the truemetrics navigation app.
+  </Card>
+  <Card title="Daily data export" icon="database" href="/Architecture_of_Export">
+    Parking places, entrances and stop durations (picking, walking, indoor, buffer) as files in
+    your own cloud storage or on SFTP, updated every night.
+  </Card>
 </CardGroup>
 
+Both start with the same step: the SDK in your courier app, sending one metadata event per
+delivery attempt.
+
+## Start here
+
+<Steps>
+  <Step title="Get an API key">
+    See [API keys](/api_keys) for which key you need for what.
+  </Step>
+  <Step title="Integrate the SDK">
+    Let a coding agent do it with the [agent prompt](/with_agent), or follow
+    [Android Native](/android_native) or [Flutter](/flutter) by hand. The [Quickstart](/quickstart)
+    lists the steps on one page.
+  </Step>
+  <Step title="Send metadata">
+    One event per delivery attempt, with the address ID your results will be keyed by: [Metadata](/metadata).
+  </Step>
+  <Step title="Verify">
+    A 30-minute test recording and a script that checks it end to end: [Verify your integration](/verify_integration).
+  </Step>
+  <Step title="Use the results">
+    Through the [last meter API](/Lastmeter_API_Reference) or the [daily export](/Architecture_of_Export),
+    once enough deliveries per address have been recorded and merged.
+  </Step>
+</Steps>
+
+Terms used across these pages are defined in the [Glossary](/glossary). Questions:
+[info@truemetrics.io](mailto:info@truemetrics.io).
