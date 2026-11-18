@@ -90,12 +90,7 @@
         "label": "Support",
         "href": "mailto:info@truemetrics.io"
       }
-    ],
-    "primary": {
-      "type": "button",
-      "label": "Map-Demonstrator",
-      "href": "https://www.demonstrator.truemetrics.cloud/map"
-    }
+    ]
   },
   "footer": {
     "socials": {
