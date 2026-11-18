@@ -8,7 +8,7 @@ description: 'Copy-paste prompt that lets a coding agent add the truemetrics las
 
 Paste the prompt below into your coding agent (Claude Code, Cursor, Copilot or similar) with your courier app repository open. The agent analyzes your app, proposes where the module goes and how your stop data maps to it, asks you to confirm every integration point, and then implements it.
 
-Before you start, request your API key and access to the module's Maven repository from truemetrics by emailing [jan@truemetrics.io](mailto:jan@truemetrics.io). The truemetrics SDK should already record in the app (see [Integrate with an AI agent](/with_agent)): the module shows what truemetrics learned from those recordings.
+Before you start, request your API key and the module's current version from truemetrics by emailing [jan@truemetrics.io](mailto:jan@truemetrics.io). The truemetrics SDK should already record in the app (see [Integrate with an AI agent](/with_agent)): the module shows what truemetrics learned from those recordings.
 
 ## The prompt
 
@@ -46,7 +46,7 @@ Confirm with me: platform, point-to-point navigation off or on, and presentation
 
 Requirements: `minSdk` 24 or higher, `compileSdk` 37, Kotlin 2.3 or newer (the library brings `kotlin-stdlib` 2.4), Java 11 or newer bytecode.
 
-- Add the truemetrics Maven repository to the repositories (URL from me / from truemetrics) and `implementation("io.truemetrics:navigation:<version>")`.
+- Add the truemetrics Maven repository to the repositories, if the SDK's setup has not already: `https://github.com/TRUE-Metrics-io/truemetrics_android_SDK_p_maven/raw/main`. Then `implementation("io.truemetrics:navigation:<version>")`, the version from me / from truemetrics.
 - Check the Kotlin and compileSdk versions. If they are below the requirements, tell me what has to change and ask before raising them.
 - The library's manifest merges these into the app: `INTERNET`, `ACCESS_NETWORK_STATE`, `ACCESS_FINE_LOCATION`, `ACCESS_COARSE_LOCATION`, `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_LOCATION`, `POST_NOTIFICATIONS`, the activity `TruemetricsNavigationActivity` and the service `DriveService` (foregroundServiceType location). Make sure the app's manifest removes none of them (`tools:node="remove"`). After a build, check the merged manifest (`app/build/outputs/logs/manifest-merger-*-report.txt`).
 - If the app uses MapLibre itself, tell me: the module sets MapLibre's process-wide settings at its first `init`.

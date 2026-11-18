@@ -42,14 +42,15 @@ which needs no native code at all.
 
 <Steps>
   <Step title="1. Add the dependency">
-    The repository URL and the current version come from your truemetrics contact.
+    The repository is the one the truemetrics SDK comes from; the current version comes from your
+    truemetrics contact.
 
     ```kotlin settings.gradle.kts
     dependencyResolutionManagement {
         repositories {
             google()
             mavenCentral()
-            maven { url = uri("<truemetrics Maven repository>") }
+            maven { url = uri("https://github.com/TRUE-Metrics-io/truemetrics_android_SDK_p_maven/raw/main") }
         }
     }
     ```
