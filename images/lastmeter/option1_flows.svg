@@ -11,15 +11,15 @@
     <path id="f1a" d="M170,125 C215,125 215,70 260,70 H640"/>
     <path id="f1b" d="M170,125 C215,125 215,180 260,180 H640"/>
   </g>
-  <g fill="#0097a7">
+  <g fill="#00636E">
     <circle r="5"><animateMotion dur="3.4s" repeatCount="indefinite"><mpath href="#f1a"/></animateMotion></circle>
     <circle r="5"><animateMotion dur="3.4s" begin="1.7s" repeatCount="indefinite"><mpath href="#f1a"/></animateMotion></circle>
     <circle r="5"><animateMotion dur="2.2s" begin="0.5s" repeatCount="indefinite"><mpath href="#f1b"/></animateMotion></circle>
   </g>
 
-  <rect x="24" y="85" width="146" height="80" rx="14" fill="#0097a7" filter="url(#shadow)"/>
+  <rect x="24" y="85" width="146" height="80" rx="14" fill="#00636E" filter="url(#shadow)"/>
   <text x="97" y="120" text-anchor="middle" font-size="17" font-weight="700" fill="#FFFFFF">truemetrics</text>
-  <text x="97" y="141" text-anchor="middle" font-size="11.5" fill="#D8F3F5">P · E · waypoint · path</text>
+  <text x="97" y="141" text-anchor="middle" font-size="11.5" fill="#FFFFFF">P · E · waypoint · path</text>
 
   <g font-size="12" font-weight="700" text-anchor="middle">
     <circle cx="280" cy="70" r="15" fill="#616161"/><text x="280" y="74.5" fill="#FFFFFF">1A</text>
