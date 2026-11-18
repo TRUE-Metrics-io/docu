@@ -1,0 +1,88 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 360" width="1000" height="360" font-family="Inter, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif">
+  <title>Metadata-triggered upload: the phone buffers sensor data all morning, a delivery at 10:30 logs a metadata event, and only the data from 9:30 to 11:30 is uploaded</title>
+  <rect width="1000" height="360" rx="14" fill="#FAFAF8"/>
+
+  <text x="40" y="40" font-size="15" font-weight="700" fill="#303334">Metadata-triggered mode: only the window around an event is uploaded</text>
+  <text x="40" y="62" font-size="12" fill="#757575">Window of 60 minutes before and after each event (the SDK's default; set per account)</text>
+
+  <!-- Lane labels -->
+  <g font-size="12" font-weight="600" fill="#303334">
+    <text x="40" y="146">On the phone</text>
+    <text x="40" y="236">Uploaded</text>
+  </g>
+
+  <!-- Depot period -->
+  <rect x="300" y="98" width="320" height="22" rx="4" fill="#ECEAE4"/>
+  <text x="460" y="113" text-anchor="middle" font-size="11" fill="#616161">at the depot 8:00–10:00</text>
+
+  <!-- Lane tracks -->
+  <rect x="140" y="128" width="800" height="28" rx="6" fill="#FFFFFF" stroke="#E0E0E0"/>
+  <rect x="140" y="218" width="800" height="28" rx="6" fill="#FFFFFF" stroke="#E0E0E0"/>
+
+  <!-- Buffered data: grows with the clock; still frame shows the whole morning -->
+  <rect x="140" y="128" width="800" height="28" rx="6" fill="#B2DFE4">
+    <animate attributeName="width" values="0;800;800;0" keyTimes="0;0.6;0.97;1" dur="12s" repeatCount="indefinite"/>
+  </rect>
+  <!-- Data outside the window greys out once the window is known -->
+  <g fill="#D9D9D6">
+    <rect x="140" y="128" width="400" height="28" rx="6"/>
+    <rect x="860" y="128" width="80" height="28" rx="6"/>
+    <animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.55;0.6;0.95;1" dur="12s" repeatCount="indefinite"/>
+  </g>
+  <text x="340" y="147" text-anchor="middle" font-size="11" fill="#757575">not uploaded
+    <animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.55;0.6;0.95;1" dur="12s" repeatCount="indefinite"/>
+  </text>
+
+  <!-- Window around the event -->
+  <rect x="540" y="122" width="320" height="40" rx="8" fill="none" stroke="#0097a7" stroke-width="2.5" stroke-dasharray="6 4">
+    <animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.42;0.46;0.95;1" dur="12s" repeatCount="indefinite"/>
+  </rect>
+  <g font-size="11" fill="#00636E" font-weight="600">
+    <text x="620" y="178" text-anchor="middle">− 60 min</text>
+    <text x="780" y="178" text-anchor="middle">+ 60 min</text>
+    <animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.42;0.46;0.95;1" dur="12s" repeatCount="indefinite"/>
+  </g>
+
+  <!-- Metadata event at 10:30 -->
+  <g>
+    <path d="M700,122 V96" stroke="#E63946" stroke-width="2"/>
+    <circle cx="700" cy="90" r="7" fill="#E63946"/>
+    <text x="712" y="94" font-size="11.5" font-weight="600" fill="#303334">10:30 delivery: metadata event</text>
+    <animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.41;0.43;0.95;1" dur="12s" repeatCount="indefinite"/>
+  </g>
+
+  <!-- Uploaded window -->
+  <rect x="540" y="218" width="320" height="28" rx="6" fill="#0097a7">
+    <animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.6;0.66;0.95;1" dur="12s" repeatCount="indefinite"/>
+  </rect>
+  <text x="700" y="237" text-anchor="middle" font-size="11.5" font-weight="600" fill="#FFFFFF">9:30–11:30 uploaded
+    <animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.6;0.66;0.95;1" dur="12s" repeatCount="indefinite"/>
+  </text>
+  <path d="M700,166 V212" stroke="#0097a7" stroke-width="2" stroke-dasharray="3 3">
+    <animate attributeName="opacity" values="0;0;1;0;0" keyTimes="0;0.6;0.63;0.7;1" dur="12s" repeatCount="indefinite"/>
+  </path>
+
+  <!-- Clock cursor; hidden in the still frame -->
+  <g opacity="0">
+    <path d="M0,116 V256" stroke="#303334" stroke-width="1.5"/>
+    <animateTransform attributeName="transform" type="translate" values="140,0;940,0;940,0" keyTimes="0;0.6;1" dur="12s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="1;1;0;0" keyTimes="0;0.6;0.62;1" dur="12s" repeatCount="indefinite"/>
+  </g>
+
+  <!-- Time axis -->
+  <g font-size="11" fill="#757575" text-anchor="middle">
+    <path d="M140,270 H940" stroke="#BDBDBD"/>
+    <g stroke="#BDBDBD">
+      <path d="M140,266 V274"/><path d="M300,266 V274"/><path d="M460,266 V274"/>
+      <path d="M620,266 V274"/><path d="M780,266 V274"/><path d="M940,266 V274"/>
+    </g>
+    <text x="140" y="290">7:00</text>
+    <text x="300" y="290">8:00</text>
+    <text x="460" y="290">9:00</text>
+    <text x="620" y="290">10:00</text>
+    <text x="780" y="290">11:00</text>
+    <text x="940" y="290">12:00</text>
+  </g>
+
+  <text x="40" y="330" font-size="11.5" fill="#616161">With a delivery every few minutes the windows overlap: the whole delivery period is uploaded, longer gaps such as depot time are not.</text>
+</svg>

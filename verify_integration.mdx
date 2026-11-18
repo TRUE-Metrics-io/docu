@@ -17,31 +17,39 @@ the result.
 
 ## 1. Get the device ID
 
-The SDK generates the device ID. Read it in your app once the SDK is initialized, and store it
-next to the test session, for example in your logs or your backend.
+The SDK generates the device ID. Read it from the first `Initialized` status after `init()` and
+store it next to the test session, for example in your logs or your backend. Do not copy it
+earlier: while the SDK is still `Initializing`, the ID can change once the configuration arrives.
 
 <CodeGroup>
 
 ```kotlin Android
-val sdk = TruemetricsSdk.getInstance()
-val deviceId = sdk.getDeviceId() // null until initialized
+import androidx.lifecycle.lifecycleScope
+import io.truemetrics.truemetricssdk.TruemetricsSdk
+import io.truemetrics.truemetricssdk.engine.state.Status
+import kotlinx.coroutines.flow.filterIsInstance
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 
-// Or from the status, e.g. in an Activity
+// In an Activity or Fragment, after init()
 lifecycleScope.launch {
-    sdk.observeSdkStatus().collect { status ->
-        when (status) {
-            is Status.Initialized -> log(status.deviceId)
-            is Status.RecordingInProgress -> log(status.deviceId)
-            else -> {}
-        }
-    }
+    val initialized = TruemetricsSdk.getInstance().observeSdkStatus()
+        .filterIsInstance<Status.Initialized>()
+        .first()
+    log("truemetrics device ID: ${initialized.deviceId}")
 }
 ```
 
 ```dart Flutter
-final deviceId = await sdk.getDeviceId(); // empty until initialized
-
-// Or from the status listener: event.deviceId
+// In your wrapper's one setStatusListener call: the first event whose state is
+// TruemetricsState.initialized carries the device ID.
+sdk.setStatusListener(
+  onStateChange: (event) {
+    if (event.state == TruemetricsState.initialized) log(event.deviceId);
+  },
+  onError: (errorCode, message) {},
+  onPermissionsRequired: (permissions) {},
+);
 ```
 
 </CodeGroup>
@@ -55,6 +63,10 @@ with the new key: only data sent under it counts, so test after the switch.
 ## 2. Record a test session
 
 The whole test takes about 50 to 75 minutes, most of it waiting.
+
+<Frame>
+  <img src="/images/motion/integration_test_clock.svg" alt="Timeline in minutes: record for 30 minutes with test metadata at about minutes 1, 15 and 29, stop and start the script, the script waits 20 minutes for the uploads and then checks every 5 minutes, at most six times, until the test passes." />
+</Frame>
 
 1. On a device that has not recorded earlier that UTC day, wait until the SDK reports
    `Initialized` (metadata logged before that is lost), then record for 30 minutes, ideally while
@@ -78,11 +90,15 @@ Logging one test object:
 <CodeGroup>
 
 ```kotlin Android
+import io.truemetrics.truemetricssdk.TruemetricsSdk
+import io.truemetrics.truemetricssdk.metadata.StandardMetadata
+import java.util.UUID
+
 // SDK 1.6.0 or newer; on older versions pass "" for every standard field.
 val testRunId = UUID.randomUUID().toString() // one per test run
 
 // At about minutes 1, 15 and 29, with test_index "1", "2" and "3"
-sdk.logMetadata(
+TruemetricsSdk.getInstance().logMetadata(
     StandardMetadata(
         eventType = "integration_test",
         extra = mapOf("test_run_id" to testRunId, "test_index" to "1"),
@@ -116,7 +132,7 @@ result.
 
 ### Check script
 
-The script below runs the whole check. It needs Python 3.8 or newer and nothing else, on macOS,
+The script below runs the whole check; the [agent prompt](/with_agent) takes it from this page. It needs Python 3.8 or newer and nothing else, on macOS,
 Linux and Windows. Start it right after the recording stops, with your SDK API key, the one your
 app initializes the SDK with, in `TRUEMETRICS_API_KEY`. Set the variable from where you keep the
 key rather than typing the key into a command, for example with

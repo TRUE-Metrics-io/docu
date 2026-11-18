@@ -12,11 +12,11 @@ for the address identifiers you send as metadata.
 ## 1. A stop where entrance and parking share one identifier
 
 The most common case: one address identifier holds both the entrance and the parking. Pass it to
-**both** parameters.
+**both** parameters, and add `geojson=true` to get the features.
 
 <RequestExample>
 ```bash Example Request
-curl --location 'https://geodata.truemetrics.cloud/V1/lastmetervisualization?identifier_entrance=ADDRESS_ID&identifier_parking=ADDRESS_ID' \
+curl --location 'https://geodata.truemetrics.cloud/V1/lastmetervisualization?identifier_entrance=ADDRESS_ID&identifier_parking=ADDRESS_ID&geojson=true' \
 --header 'x-api-key: YOUR_API_KEY'
 ```
 </RequestExample>
@@ -58,7 +58,7 @@ curl --location 'https://geodata.truemetrics.cloud/V1/lastmetervisualization?ide
     }
   ],
   "metadata": { "mode": "default", "system": "EPSG:4326", "waypoint_style": "marker" },
-  "view": { "center": { "lat": 50.251606, "lon": 18.838203 }, "zoom": 18,
+  "view": { "center": { "lat": 50.2516245, "lon": 18.8382025 }, "zoom": 18,
             "orientation": 0, "position_fixed": true, "zoomable": false }
 }
 ```
@@ -66,25 +66,26 @@ curl --location 'https://geodata.truemetrics.cloud/V1/lastmetervisualization?ide
 
 <Info>
 When the entrance is matched to a building, a `polygon` feature (`point_type: "building"`) is also
-included and drawn beneath the markers.
+included and drawn beneath the markers, and `view` covers it too.
 </Info>
 
 ## 2. Entrance and parking under different identifiers
 
-If your entrance and parking live under separate address ids, pass each to its own parameter — they
+If your entrance and parking live under separate address IDs, pass each to its own parameter. They
 are joined into one stop and connected by the dashed walking path.
 
 <RequestExample>
 ```bash Example Request
-curl --location 'https://geodata.truemetrics.cloud/V1/lastmetervisualization?identifier_entrance=ENTRANCE_ADDRESS_ID&identifier_parking=PARKING_ADDRESS_ID' \
+curl --location 'https://geodata.truemetrics.cloud/V1/lastmetervisualization?identifier_entrance=ENTRANCE_ADDRESS_ID&identifier_parking=PARKING_ADDRESS_ID&geojson=true' \
 --header 'x-api-key: YOUR_API_KEY'
 ```
 </RequestExample>
 
-## 3. Rendered image — transparent
+## 3. Rendered image, transparent
 
-Add `raster=true` to also receive a PNG. With no basemap the image has a **transparent**
-background, so you can overlay it on your own map.
+Add `raster=true` to receive a PNG. Without `geojson=true` the features stay out and the answer
+stays small. With no basemap the image has a **transparent** background. Its size is set with
+`width` and `height` (default 640 × 480).
 
 <RequestExample>
 ```bash Example Request
@@ -97,14 +98,14 @@ curl --location 'https://geodata.truemetrics.cloud/V1/lastmetervisualization?ide
 ```json Response (truncated)
 {
   "type": "FeatureCollection",
-  "features": [ /* … same as example 1 … */ ],
-  "metadata": { "mode": "default", "system": "EPSG:4326", "waypoint_style": "marker" },
-  "view": { "center": { "lat": 50.251606, "lon": 18.838203 }, "zoom": 18, "orientation": 0, "position_fixed": true, "zoomable": false },
+  "features": [],
+  "metadata": { "mode": "default", "system": "EPSG:4326", "waypoint_style": "faded" },
+  "view": { "center": { "lat": 50.2516245, "lon": 18.8382025 }, "zoom": 18, "orientation": 0, "position_fixed": true, "zoomable": false },
   "raster": {
     "image": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA…",
     "width": 640,
     "height": 480,
-    "bbox": [18.837992, 50.251594, 18.838413, 50.251618],
+    "bbox": [18.837992, 50.251594, 18.838413, 50.251655],
     "basemap": false
   }
 }
@@ -113,9 +114,15 @@ curl --location 'https://geodata.truemetrics.cloud/V1/lastmetervisualization?ide
 
 <img height="260" noZoom src="/images/lastmeter_transparent.png" />
 
-## 4. Rendered image — on a street basemap
+The images on this page come from an account with `waypoint_style: "faded"`: no waypoint marker,
+and the approach line fades out toward the waypoint. With `"marker"` the PNG draws a blue W at the
+start of a solid line. The GeoJSON contains the waypoint either way. `bbox` is not the extent of
+the image; see [the rendered image](/Lastmeter_API_Reference#the-rendered-image).
 
-Add `basemap=true` to draw the geometry on a street basemap.
+## 4. Rendered image on a street basemap
+
+Add `basemap=true` to draw the geometry on a street basemap. The image carries the Mapbox logo and
+"© Mapbox © OpenStreetMap"; keep both visible where you show it.
 
 <RequestExample>
 ```bash Example Request
@@ -138,22 +145,22 @@ curl -s --header 'x-api-key: YOUR_API_KEY' \
 
 ## 6. Toggling the building highlight and the reference point
 
-The building footprint is drawn **by default**. Pass `building=false` to suppress it:
+The building footprint is included **by default**. Pass `building=false` to leave it out:
 
 <RequestExample>
 ```bash Without the building highlight
-curl --location 'https://geodata.truemetrics.cloud/V1/lastmetervisualization?identifier_entrance=ADDRESS_ID&identifier_parking=ADDRESS_ID&building=false' \
+curl --location 'https://geodata.truemetrics.cloud/V1/lastmetervisualization?identifier_entrance=ADDRESS_ID&identifier_parking=ADDRESS_ID&geojson=true&building=false' \
 --header 'x-api-key: YOUR_API_KEY'
 ```
 </RequestExample>
 
-If your account sends a **reference location** with its metadata, add `reference=true` to also plot
-it as a small red **taskpoint** — handy for comparing the planned location against the detected
-entrance:
+If reference points are enabled for your account (on request) and you send a **reference
+location** in your [metadata](/metadata), add `reference=true` to also plot it as a small red
+**taskpoint**, to compare the planned location with the learned entrance:
 
 <RequestExample>
 ```bash With the reference point
-curl --location 'https://geodata.truemetrics.cloud/V1/lastmetervisualization?identifier_entrance=ADDRESS_ID&identifier_parking=ADDRESS_ID&reference=true' \
+curl --location 'https://geodata.truemetrics.cloud/V1/lastmetervisualization?identifier_entrance=ADDRESS_ID&identifier_parking=ADDRESS_ID&geojson=true&reference=true' \
 --header 'x-api-key: YOUR_API_KEY'
 ```
 </RequestExample>
@@ -167,12 +174,13 @@ curl --location 'https://geodata.truemetrics.cloud/V1/lastmetervisualization?ide
 }
 ```
 
-The reference point appears as a small red dot next to the detected entrance — here the planned
-location sits a few metres from the entrance that was actually used:
+The reference point appears as a small red dot next to the learned entrance. Here the planned
+location sits a few metres from the entrance couriers actually use:
 
 <img height="260" noZoom src="/images/lastmeter_reference.png" />
 
 <Info>
-If the stop has no data yet, the call still returns `200` with an empty `features` array (and no
-`raster`). This is expected — the geometry appears as soon as the stop has been processed.
+With `geojson=true`, an empty `features` array means the stop has no data yet: still a `200`,
+with `view: null` and no `raster`. New deliveries count after the next nightly merge run. Without
+`geojson=true`, `features` is always empty.
 </Info>

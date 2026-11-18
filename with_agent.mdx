@@ -8,7 +8,7 @@ description: 'Copy-paste prompt that lets a coding agent integrate the truemetri
 
 Paste the prompt below into your coding agent (Claude Code, Cursor, Copilot or similar) with your courier app repository open. The agent analyzes your app, proposes where each truemetrics call goes, asks you to confirm every integration point, and then implements it.
 
-Before you start, request your API key from truemetrics by emailing [jan@truemetrics.io](mailto:jan@truemetrics.io). The prompt references the exact SDK functions for Android native and Flutter.
+Before you start, request your API key from truemetrics by emailing [info@truemetrics.io](mailto:info@truemetrics.io). The prompt references the exact SDK functions for Android native and Flutter.
 
 ## The prompt
 
@@ -23,11 +23,11 @@ Work in this order:
 1. Analyze the codebase: language and framework, login/logout, route start/end, navigation start, delivery confirmation (success/fail), app startup and session restore, and the data models for routes, stops, deliveries, parcels and addresses.
 2. For EACH integration point below, propose the exact file, function and line, explain why, and ASK ME TO CONFIRM before writing code. Ask all questions in one batch where possible. You may add the SDK repository and dependency before asking, to read the SDK's manifest and API; change nothing else before I confirm, and include this change in your questions.
 3. Implement only what I confirmed. Keep changes minimal and isolated (ideally one wrapper class, e.g. `TruemetricsTracker`).
-4. Use the SDK API reference at the end of this prompt. If a signature differs in the installed version, the installed version wins. For metadata event names, keys and triggers, follow this prompt where other truemetrics documentation pages differ.
+4. Use the SDK API reference at the end of this prompt. If a signature differs in the installed version, the installed version wins. For metadata fields, extra keys and triggers, the reference is https://docu.truemetrics.cloud/metadata (Markdown: https://docu.truemetrics.cloud/metadata.md); it uses the same names as this prompt.
 
 ## API key
 
-The API key is issued by truemetrics. If I have not given you one, stop and tell me to request it from jan@truemetrics.io. Store it in the app's existing secrets/config mechanism (e.g. Gradle property, .env, build config), never hard-coded in source or committed to git.
+The API key is issued by truemetrics. If I have not given you one, stop and tell me to request it from info@truemetrics.io. Store it in the app's existing secrets/config mechanism (e.g. Gradle property, .env, build config), never hard-coded in source or committed to git.
 
 ## 0. Choose the SDK variant
 
@@ -120,11 +120,11 @@ The SDK drops metadata that is logged before it is ready, e.g. right after init 
 
 Confirm with me: the exact function(s) where a delivery reaches its final state, and how multi-parcel stops are modeled.
 
-Use the standard metadata fields of `StandardMetadata` (wire keys in brackets). All values are strings.
+Use the standard metadata fields of `StandardMetadata` (wire keys in brackets). All values are strings. The full list of fields and extra keys, with required, recommended and optional ones, is at https://docu.truemetrics.cloud/metadata.
 
 | Field (wire key) | Content |
 | --- | --- |
-| eventTime (`t_event`) | ISO 8601 timestamp of the driver interaction. |
+| eventTime (`t_event`) | ISO 8601 timestamp of the driver interaction, with a UTC offset or `Z`, e.g. `2026-01-15T14:30:00+01:00`. |
 | eventType (`type_event`) | `delivery` or `pickup`. |
 | deliveryId (`id_delivery_external`) | Delivery ID. |
 | tourId (`id_tour`) | Route / tour ID. |
@@ -169,99 +169,7 @@ Finish with this test, together with me: I run it on the test device, you tell m
 1. Recording (30 min): on a real Android test device that has not recorded earlier that UTC day, once the SDK reports `Initialized` (metadata logged before that is lost), start recording and keep it running for 30 minutes, ideally while moving (walking or driving), so location, gyroscope and accelerometer produce data. Finish before 00:00 UTC: the check covers one whole UTC day.
 2. Metadata: at about minutes 1, 15 and 29 of the recording, log 3 test metadata objects through the wrapper (section 5) with `eventType` = `integration_test` and, in `extra`, the same `test_run_id` (a new unique ID, e.g. a UUID) and `test_index` `1`, `2`, `3`. A temporary debug action is enough; do not ship it in the release build.
 3. Stop: stop the recording with the app's stop trigger or the debug action, not by logging out, and keep the app logged in and the device online until the check passes: the SDK uploads the end of the recording after the stop, and after a logout it uploads nothing until the next login.
-4. Check (up to 45 min): ask me for the test device's ID (section 7). Save the script below outside the repository (never commit it) and start it right after the recording stops, as `python3 check_integration.py <device ID>` (`py` instead of `python3` on Windows), with `TRUEMETRICS_API_KEY` set from where you stored the API key ("API key" above), never written into a file or a command line. It waits 20 minutes, since data arrives with the SDK's uploads, typically 10 to 20 minutes after recording (tell me this wait is expected, not an error), then checks every 5 minutes up to 45 minutes after the stop. Run it in the background and read its output when it ends; if you cannot run background commands, give me the script and the command, and ask me for its output. It needs Python 3.8 or newer and nothing else.
-
-       """Checks a test recording against GET /testresult. Start it right after the recording stops:
-           python3 check_integration.py <device ID> [YYYY-MM-DD], with the key in TRUEMETRICS_API_KEY
-       Waits 20 minutes, then checks every 5 minutes until 45 minutes after the stop.
-       Exit code: 0 passed, 1 failed, 2 the check could not run, 3 wrong key or request.
-       Needs Python 3.8 or newer, nothing else.
-       """
-
-       import datetime
-       import json
-       import os
-       import sys
-       import time
-       import urllib.error
-       import urllib.parse
-       import urllib.request
-
-       URL = "https://geodata.truemetrics.cloud/V1/testresult"
-
-
-       def utc_now():
-           return datetime.datetime.now(datetime.timezone.utc)
-
-
-       def test_objects(result):
-           """Metadata entries that carry both test fields."""
-           return sum(
-               1
-               for entry in result.get("customer_metadata") or []
-               if {"test_run_id", "test_index"} <= set(entry.get("fields") or [])
-           )
-
-
-       def summary(result, names):
-           """The given fields of a result, plus its number of test objects."""
-           shown = {name: result.get(name) for name in names}
-           shown["test_objects"] = test_objects(result)
-           return json.dumps(shown, indent=2)
-
-
-       def fetch(url, key):
-           """One request: the HTTP status (0 for no answer) and the body."""
-           request = urllib.request.Request(url, headers={"x-api-key": key})
-           try:
-               with urllib.request.urlopen(request, timeout=60) as response:
-                   return response.status, json.load(response)
-           except urllib.error.HTTPError as error:
-               return error.code, error.read().decode(errors="replace")
-           except (urllib.error.URLError, OSError, ValueError) as error:
-               return 0, str(getattr(error, "reason", error))
-
-
-       def main():
-           key = os.environ.get("TRUEMETRICS_API_KEY")
-           if len(sys.argv) not in (2, 3) or not key:
-               print("usage:", __doc__.splitlines()[1].strip(), file=sys.stderr)
-               return 3
-           device_id = sys.argv[1]
-           # The recording's UTC day, fixed before the wait.
-           day = sys.argv[2] if len(sys.argv) == 3 else utc_now().date().isoformat()
-           query = urllib.parse.urlencode({"id_device": device_id, "date": day})
-           print(f"Checking device {device_id} for {day} (UTC).", flush=True)
-
-           time.sleep(int(os.environ.get("WAIT_SECONDS", "1200")))
-           last = None
-           for check in range(1, 7):
-               if check > 1:
-                   time.sleep(300)
-               status, body = fetch(f"{URL}?{query}", key)
-               answer = f"HTTP {status}" if status else f"no answer ({body})"
-               print(f"{utc_now():%H:%M} UTC, check {check} of 6: {answer}", flush=True)
-               if status == 200:
-                   ok = body.get("status") == "ok" and body.get("config") == "device"
-                   if ok and test_objects(body) >= 3:
-                       print("PASSED", summary(body, ("counts", "recording_minutes")), sep="\n")
-                       return 0
-                   last = body
-               elif status in (400, 403):
-                   print(body)
-                   if status == 403:
-                       print("Wrong API key, or the key is not enabled for this check: ask truemetrics.")
-                   return 3
-
-           if last is not None:
-               print("FAILED", summary(last, ("status", "reasons", "config", "counts")), sep="\n")
-               return 1
-           print("The check could not run: this is not a test result. Try again later.")
-           return 2
-
-
-       if __name__ == "__main__":
-           sys.exit(main())
+4. Check (up to 45 min): ask me for the test device's ID (section 7). Take the script from the code block `check_integration.py` under "Check script" on https://docu.truemetrics.cloud/verify_integration.md (the page as Markdown; https://docu.truemetrics.cloud/verify_integration in a browser), unchanged. If you cannot fetch it, ask me to paste it. Save it outside the repository (never commit it) and start it right after the recording stops, as `python3 check_integration.py <device ID>` (`py` instead of `python3` on Windows), with `TRUEMETRICS_API_KEY` set from where you stored the API key ("API key" above), never written into a file or a command line. It waits 20 minutes, since data arrives with the SDK's uploads, typically 10 to 20 minutes after recording (tell me this wait is expected, not an error), then checks every 5 minutes up to 45 minutes after the stop. Run it in the background and read its output when it ends; if you cannot run background commands, give me the script and the command, and ask me for its output. It needs Python 3.8 or newer and nothing else.
 
    Exit code 0: the test passed. 1: it failed (see below); `test_objects` below 3 means the test metadata did not arrive. 2: the check could not run (rate limit or server error): that is not a test result, run it again later with `WAIT_SECONDS=0` and, as the second argument, the UTC day it printed at the start (it would otherwise check the current day). 3: the key or the request was rejected; on a `403`, tell me to ask truemetrics to enable the key for this check. A result with `config` `unavailable` (rates not checked) does not pass: report it to me.
 
