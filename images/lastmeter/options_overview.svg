@@ -47,9 +47,9 @@
 
   <!-- truemetrics source -->
   <g filter="url(#shadow)">
-    <rect x="24" y="260" width="186" height="80" rx="14" fill="#00636E"/>
+    <rect x="24" y="260" width="186" height="80" rx="14" fill="#E0F4F6" stroke="#0097a7" stroke-width="2"/>
   </g>
-  <text x="117" y="306" text-anchor="middle" font-size="18" font-weight="700" fill="#FFFFFF">truemetrics data</text>
+  <text x="117" y="306" text-anchor="middle" font-size="18" font-weight="700" fill="#1A1A1A">truemetrics data</text>
 
   <!-- Row badges -->
   <g font-size="12" font-weight="700" text-anchor="middle">
