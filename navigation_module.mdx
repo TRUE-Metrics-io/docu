@@ -262,7 +262,7 @@ class StopActivity : AppCompatActivity(), TruemetricsNavigationFragment.Host {
 </ParamField>
 
 <ParamField path="nextStop" type="Int" default="0">
-  Index in `stops` of the stop at `destination`, counted from 0. An index outside `stops` throws.
+  Index in `stops` of the stop at `destination`, counted from 0. An index outside `stops` throws; without stops, leave it at 0.
 </ParamField>
 
 <ParamField path="routing" type="Boolean" default="false">

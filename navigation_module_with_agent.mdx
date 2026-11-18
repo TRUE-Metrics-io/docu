@@ -69,7 +69,7 @@ One request each time a stop is opened: the whole tour (up to 200 stops) and whi
 | --- | --- |
 | `destination` | `LatLon(lat, lon)` of the stop to go to in WGS84, latitude first: the coordinate the app hands to Google Maps today. Required. |
 | `stops` | The tour in its order, one `NavigationStop` per stop (fields below). If the app knows only the one stop, a list with that stop. |
-| `nextStop` | Index in `stops` of the stop to go to, counted from 0. An index outside `stops` throws `IllegalArgumentException`. |
+| `nextStop` | Index in `stops` of the stop to go to, counted from 0. An index outside `stops` throws `IllegalArgumentException`; without stops, leave it at 0. |
 | `routing` | Point-to-point navigation: `false` off, `true` on. |
 | `showCard` | `true` with the module's own card (full screen). `false` when the module sits inside the app's own screen that shows the stop and its own buttons. |
 | `backLabel` | The card's Back button text, e.g. "Back to stop". `null` when `showCard = false`. |
