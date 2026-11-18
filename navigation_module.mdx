@@ -41,14 +41,15 @@ which needs no native code at all.
 
 <Steps>
   <Step title="1. Add the dependency">
-    The repository URL and the current version come from your truemetrics contact.
+    The repository is the one the truemetrics SDK comes from; the current version comes from your
+    truemetrics contact.
 
     ```kotlin settings.gradle.kts
     dependencyResolutionManagement {
         repositories {
             google()
             mavenCentral()
-            maven { url = uri("<truemetrics Maven repository>") }
+            maven { url = uri("https://github.com/TRUE-Metrics-io/truemetrics_android_SDK_p_maven/raw/main") }
         }
     }
     ```
@@ -154,7 +155,9 @@ which needs no native code at all.
 
     Either implement `TruemetricsNavigationFragment.Host` on the activity (or the parent fragment):
     it hears the end at once, also while your screen is out of sight, for example with the phone
-    locked. Or listen for the fragment result, delivered when your screen is started:
+    locked. Out of sight your screen's state is already saved, so remove the fragment with
+    `commitNowAllowingStateLoss()`: a `commitNow()` throws there. Or listen for the fragment result,
+    delivered when your screen is started:
 
     ```kotlin
     supportFragmentManager.setFragmentResultListener(TruemetricsNavigationFragment.RESULT_KEY, this) { _, bundle ->
@@ -320,9 +323,11 @@ One stop of the tour. Every field is optional.
 ## Good to know
 
 - **One module per activity.** For the next stop, remove the old fragment with `commitNow()` first,
-  then add the new one. A `replace` builds the new map while the old one still lives.
+  then add the new one. A `replace` builds the new map while the old one still lives. In answer to
+  an end heard as a `Host`, use `commitNowAllowingStateLoss()` (see step 5).
 - **Permissions.** The module asks for location itself, and for notifications at the first drive
-  (Android 13+). Without location it says so on the map and offers the fix.
+  (Android 13+). Without location it says so on the map and offers the fix. Until location is
+  allowed it shows nothing of the stop, with navigation off too: the last meter loads only then.
 - **Back.** The system Back ends the navigation (you hear it as the result); after that, Back is
   yours again.
 - **Theme.** The map puts its own theme on the activity while it is created; the module puts your
