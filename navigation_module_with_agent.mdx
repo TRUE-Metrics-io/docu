@@ -147,7 +147,7 @@ Behavior to know:
 - Without routing: the map shows parking (P), entrance (E), walk path and building, plus the courier's position as a dot (precise location only), always in one frame. Ends with Back.
 - With routing: route to the waypoint (else parking, else destination), turn-by-turn without voice, rerouting, arrival within 30 m of the parking or entrance and slower than 15 km/h for 20 s. A foreground service keeps the drive going with the phone locked.
 - Without last-meter data for the IDs: the destination, with the building at it highlighted.
-- The module asks for location itself, and for notifications at the first drive (Android 13+).
+- The module asks for location itself, and for notifications at the first drive (Android 13+). Until location is allowed it shows "Location access needed" and nothing of the stop, without routing too: the last meter loads only then.
 
 ## Done when
 
