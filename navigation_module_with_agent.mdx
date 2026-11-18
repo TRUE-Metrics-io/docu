@@ -44,7 +44,7 @@ Confirm with me: platform, point-to-point navigation off or on, and presentation
 
 ## 1. Dependency and build setup
 
-Requirements: `minSdk` 23 or higher, `compileSdk` 37, Kotlin 2.3 or newer (the library brings `kotlin-stdlib` 2.4), Java 11 or newer bytecode.
+Requirements: `minSdk` 24 or higher, `compileSdk` 37, Kotlin 2.3 or newer (the library brings `kotlin-stdlib` 2.4), Java 11 or newer bytecode.
 
 - Add the truemetrics Maven repository to the repositories (URL from me / from truemetrics) and `implementation("io.truemetrics:navigation:<version>")`.
 - Check the Kotlin and compileSdk versions. If they are below the requirements, tell me what has to change and ask before raising them.
@@ -61,33 +61,38 @@ Show me the Gradle and manifest diff before applying it.
 
 Confirm with me: the Application class and where the key comes from.
 
-## 3. Map the stop to a `NavigationRequest`
+## 3. Map the tour to a `NavigationRequest`
 
-One request per stop. Map this app's stop model:
+One request each time a stop is opened: the whole tour (up to 200 stops) and which of its stops comes next. Only that stop is used for now, but the whole tour goes in from the start. Map this app's tour and stop model:
 
 | Request field | Content |
 | --- | --- |
-| `destination` | `LatLon(lat, lon)` of the stop in WGS84, latitude first: the coordinate the app hands to Google Maps today. Required. |
-| `id` | The stop's `address_id`, exactly as sent to truemetrics in the SDK metadata. |
-| `idSecondary` | Leave it out by default. Only if the app uses a second identifier for the stop (e.g. a separate parking or route point) and I confirm it. |
-| `address` | Street and house number, one line. |
-| `addressDetail` | A second line, e.g. "Planned Arrival 14:22" if the app has a planned time, else postcode and city; ask me. |
+| `destination` | `LatLon(lat, lon)` of the stop to go to in WGS84, latitude first: the coordinate the app hands to Google Maps today. Required. |
+| `stops` | The tour in its order, one `NavigationStop` per stop (fields below). If the app knows only the one stop, a list with that stop. |
+| `nextStop` | Index in `stops` of the stop to go to, counted from 0. An index outside `stops` throws `IllegalArgumentException`; without stops, leave it at 0. |
 | `routing` | Point-to-point navigation: `false` off, `true` on. |
 | `showCard` | `true` with the module's own card (full screen). `false` when the module sits inside the app's own screen that shows the stop and its own buttons. |
 | `backLabel` | The card's Back button text, e.g. "Back to stop". `null` when `showCard = false`. |
 | `endOnArrival` | `true` when `showCard = false`; otherwise leave it out. |
 
+| `NavigationStop` field | Content |
+| --- | --- |
+| `id` | The stop's `address_id`, exactly as sent to truemetrics in the SDK metadata. |
+| `idSecondary` | Leave it out by default. Only if the app uses a second identifier for the stop (e.g. a separate parking or route point) and I confirm it. |
+| `line1` | Street and house number, one line. |
+| `line2` | A second line, e.g. "Planned Arrival 14:22" if the app has a planned time, else postcode and city; ask me. |
+
 IMPORTANT, the IDs: they tell the module where to guide the courier and which last meter to show (parking, entrance, walk path). They are typically the app's address identifier or route point identifier, the same value the app sends as `address_id` in the truemetrics SDK metadata. Look them up in the metadata code; do not guess. Without them the module shows only the destination.
 
 Examples of what to look for:
 - A field such as `addressId`, `deliveryPointId`, `servicePointId`, `locationId` or `routePointId` on the stop model, passed to the SDK as `address_id`.
-- The request then carries it as `id = "<address_id>"`.
+- Each stop then carries it as `NavigationStop(id = "<address_id>", …)`.
 - Only if the app uses a second identifier for the stop (e.g. a separate parking or route point next to the address), `idSecondary` can carry it. Leave it out by default and ask me before using it.
 - Not an ID: a parcel or shipment number, a tour or route number, the stop's position in the tour, a database row ID that changes with every tour.
 
 Do not set `simulate` or `simulationStart` (demo only).
 
-Confirm with me: the field mapping from this app's stop model.
+Confirm with me: the field mapping from this app's tour and stop model.
 
 ## 4. Show the module
 
@@ -129,7 +134,8 @@ Package `io.truemetrics.navigation`.
 | Purpose | Call |
 | --- | --- |
 | Init | `TruemetricsNavigation.init(context, apiKey)` (optional third parameter `simulateByDefault`, demo only) |
-| Request | `NavigationRequest(destination: LatLon, address: String? = null, addressDetail: String? = null, id: String? = null, idSecondary: String? = null, backLabel: String? = "Back", simulate: Boolean = false, simulationStart: LatLon? = null, routing: Boolean = false, showCard: Boolean = true, endOnArrival: Boolean? = null)`; invalid coordinates throw `IllegalArgumentException` |
+| Request | `NavigationRequest(destination: LatLon, stops: List<NavigationStop> = emptyList(), nextStop: Int = 0, backLabel: String? = "Back", simulate: Boolean = false, simulationStart: LatLon? = null, routing: Boolean = false, showCard: Boolean = true, endOnArrival: Boolean? = null)`; invalid coordinates and a `nextStop` outside `stops` throw `IllegalArgumentException` |
+| Stop | `NavigationStop(id: String? = null, idSecondary: String? = null, line1: String? = null, line2: String? = null)` |
 | Position | `LatLon(lat: Double, lon: Double)`, WGS84 degrees |
 | Fragment | `TruemetricsNavigationFragment.newInstance(request)`, `TruemetricsNavigationFragment.arguments(request)` (for creation by class) |
 | End, as host | `TruemetricsNavigationFragment.Host { fun onNavigationFinished(result: NavigationResult) }` on the activity or parent fragment |

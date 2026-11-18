@@ -62,6 +62,10 @@ truemetrics.navigation://navigate
     &route=<route JSON, URL-encoded>
 ```
 
+`returnApp` is your own app's package name (its `applicationId`); `com.example.scanner` stands for
+it here. The app switches to whichever package is named: another app's brings that app to the
+front, and one that is not installed means no switch at all.
+
 <Note>
 Shown on several lines for reading; the link itself is one line. Use the `truemetrics.navigation://`
 scheme: it opens only the truemetrics app. `google.navigation:` may open Google Maps when both are
@@ -71,6 +75,7 @@ installed.
 <CodeGroup>
 ```dart Flutter (url_launcher)
 final route = Uri.encodeComponent(jsonEncode(routeJson));
+// returnApp: your own app's package name (applicationId)
 final link = Uri.parse(
   'truemetrics.navigation://navigate?q=$lat,$lng&returnApp=com.example.scanner&route=$route',
 );
@@ -81,6 +86,7 @@ if (!await launchUrl(link, mode: LaunchMode.externalApplication)) {
 
 ```javascript React Native
 const route = encodeURIComponent(JSON.stringify(routeJson));
+// returnApp: your own app's package name (applicationId)
 const link = `truemetrics.navigation://navigate?q=${lat},${lng}&returnApp=com.example.scanner&route=${route}`;
 Linking.openURL(link).catch(() =>
   Linking.openURL(`google.navigation:q=${lat},${lng}&mode=d`),   // not installed
@@ -209,15 +215,15 @@ shown at a desk or in a customer meeting without driving there.
   metres before the stop, on the road leading in, shows the approach and the last meter in a minute.
 </ParamField>
 
-A simulated handover from a computer, as your app would send it (without the `simulate` and
-`simulationStart` options it drives on GPS):
+A simulated handover from a computer, as your app would send it, with your app's package as
+`returnApp` (without the `simulate` and `simulationStart` options it drives on GPS):
 
 ```bash
-adb shell am start -a android.intent.action.VIEW \
+adb shell 'am start -a android.intent.action.VIEW \
   -d "google.navigation:q=55.654436,12.361784&mode=d" \
   -n io.truemetrics.navigation/.ui.navigation.HandoverActivity \
   --es returnApp com.example.scanner \
-  --ez simulate true --es simulationStart "55.65624,12.357918"
+  --ez simulate true --es simulationStart "55.65624,12.357918"'
 ```
 
 The truemetrics test app ("Scanner (test caller)") hands over stops exactly like this, with a
