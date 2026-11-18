@@ -154,30 +154,3 @@ Options can be combined: for example 1B in a dispatcher dashboard and 3 on the c
     identifier or route point identifier.
   </Step>
 </Steps>
-
-## Best practices for the last meter
-
-What the truemetrics module and the standalone app (options 2 and 3) do out of the box. With options 1A and 1B, these
-are the rules to follow in your own map.
-
-1. **Route to the waypoint, not to the address pin.** The routing target is the waypoint, else the
-   parking, else the address. From the waypoint, show the short drive into the parking.
-2. **Show the stop before the courier arrives,** with the stop selected or the courier approaching,
-   so the parking is chosen while still driving.
-3. **Distinct, fixed symbols:** parking blue with a P, entrance red with an E, the walk path dashed,
-   the building lightly filled. Use the same symbols on every stop and every screen.
-4. **Courier and stop in one frame.** Near the stop, switch to a flat top view that shows the
-   courier's position, the parking and the entrance together.
-5. **Without routing, do not draw the drive into the parking.** A line from the waypoint to the
-   parking reads as a route; show only the parking, the walk path and the entrance.
-6. **Fall back without a gap.** No last meter yet for a stop: show the destination and highlight the
-   building at it. A failed request is not "no data": ask again (the module retries after 10 and
-   30 seconds).
-7. **Glanceable, no voice:** one card, the street on one line (cut with "…"), time left and arrival
-   time, one button. Couriers look for a second, not longer.
-8. **Arrival at the door, not at the pin:** within 30 m of the parking (or the entrance) and slower
-   than 15 km/h for 20 seconds. Then lead back to the courier app.
-9. **Precise positions only.** An approximate location can be far off; do not draw it as the
-   courier's position.
-10. **Easy on old devices and the battery.** Draw only when something changes, lower the map
-    detail where a device cannot keep up, and test on the devices your couriers use.
