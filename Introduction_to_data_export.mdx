@@ -38,8 +38,8 @@ Times are seconds, timestamps are Unix time in seconds (UTC). Lists are stored a
 | `t_buffer` | number | s | `S2` to `F`: back at the vehicle until driving off, usually to prepare the next delivery. |
 | `t_total` | number | s | `S` to `F`: the whole stop (stopping time), the five durations above added up. |
 | `t_search` | number | s | `t_outdoor_to_customer − t_outdoor_from_customer`: how much longer the way in took than the way back, an estimate of the time spent finding the entrance; waiting at the door or carrying a heavy parcel add to it too. Empty without a detected entrance; can be negative. |
-| `ts_events` | string (list) | timestamp | The times of your [metadata](/metadata) events during the stop. |
-| `number_of_deliveries_in_stop` | number | count | The number of entries in `ts_events`. |
+| `ts_events` | string (list) | timestamp | The times of your [metadata](/metadata) events during the stop, failed delivery attempts included. |
+| `number_of_deliveries_in_stop` | number | count | The number of entries in `ts_events`, so a failed delivery attempt counts too. |
 | `visits` | string (list) | | One entry per entrance walked to during the stop, for stops that serve several addresses. |
 | `distance_stationary_stop`, `distance_walking_stop`, `distance_driving_stop` | number | m | Distance covered standing, walking and driving between `S` and `F`. |
 | `dt_stationary_stop`, `dt_walking_stop`, `dt_driving_stop` | number | s | Time spent standing, walking and driving between `S` and `F`. |
